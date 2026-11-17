@@ -2,7 +2,14 @@
 // Database Configuration
 // Mendukung Dynamic Environment Variables (Vercel / Cloud MySQL) & Fallback ke Localhost (XAMPP)
 
-$dbUrl = getenv('DATABASE_URL') ?: (getenv('MYSQL_URL') ?: ($_ENV['DATABASE_URL'] ?? ($_ENV['MYSQL_URL'] ?? '')));
+$getEnv = function(string $key, string $default = ''): string {
+    if (isset($_ENV[$key]) && $_ENV[$key] !== '') return (string)$_ENV[$key];
+    if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') return (string)$_SERVER[$key];
+    $val = getenv($key);
+    return ($val !== false && $val !== '') ? (string)$val : $default;
+};
+
+$dbUrl = $getEnv('DATABASE_URL', $getEnv('MYSQL_URL'));
 
 if (!empty($dbUrl)) {
     // Dukungan format Connection String URL: mysql://user:pass@host:port/dbname
@@ -15,15 +22,16 @@ if (!empty($dbUrl)) {
     $dbSsl  = true;
 } else {
     // Dukungan variabel individual (Standar Vercel / TiDB / Railway / Aiven)
-    $dbHost = getenv('DB_HOST') ?: (getenv('MYSQLHOST') ?: ($_ENV['DB_HOST'] ?? ($_ENV['MYSQLHOST'] ?? '127.0.0.1')));
-    $dbPort = (int)(getenv('DB_PORT') ?: (getenv('MYSQLPORT') ?: ($_ENV['DB_PORT'] ?? ($_ENV['MYSQLPORT'] ?? 3306))));
-    $dbUser = getenv('DB_USER') ?: (getenv('MYSQLUSER') ?: ($_ENV['DB_USER'] ?? ($_ENV['MYSQLUSER'] ?? 'root')));
-    $dbPass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : (getenv('MYSQLPASSWORD') !== false ? getenv('MYSQLPASSWORD') : ($_ENV['DB_PASS'] ?? ($_ENV['MYSQLPASSWORD'] ?? '')));
-    $dbName = getenv('DB_NAME') ?: (getenv('MYSQLDATABASE') ?: ($_ENV['DB_NAME'] ?? ($_ENV['MYSQLDATABASE'] ?? 'db_perpustakaan')));
+    $dbHost = $getEnv('DB_HOST', $getEnv('MYSQLHOST', '127.0.0.1'));
+    $dbPort = (int)$getEnv('DB_PORT', $getEnv('MYSQLPORT', '3306'));
+    $dbUser = $getEnv('DB_USER', $getEnv('MYSQLUSER', 'root'));
+    $dbPass = $getEnv('DB_PASS', $getEnv('MYSQLPASSWORD', ''));
+    $dbName = $getEnv('DB_NAME', $getEnv('MYSQLDATABASE', 'db_perpustakaan'));
     
     // Otomatis aktifkan SSL jika terhubung ke server cloud remote (bukan localhost)
     $isRemote = ($dbHost !== '127.0.0.1' && $dbHost !== 'localhost');
-    $dbSsl    = (getenv('DB_SSL') === 'true' || ($_ENV['DB_SSL'] ?? '') === 'true' || $isRemote);
+    $sslEnv   = strtolower($getEnv('DB_SSL', ''));
+    $dbSsl    = ($sslEnv === 'true' || $sslEnv === '1' || $isRemote);
 }
 
 return [

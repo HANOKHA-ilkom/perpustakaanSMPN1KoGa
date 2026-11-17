@@ -1046,6 +1046,7 @@ class PerpusModel {
     }
 
     public function getAllBuku(): array {
+        if (!$this->db) return [];
         // Menggunakan JOIN / View untuk relasi formal kategori dan penerbit serta kalkulasi sirkulasi
         $sql = "SELECT 
                     b.id_buku,
@@ -1081,6 +1082,7 @@ class PerpusModel {
     }
 
     public function getBukuById(int $id): ?array {
+        if (!$this->db) return null;
         $sql = "SELECT 
                     b.id_buku,
                     b.id_kategori,

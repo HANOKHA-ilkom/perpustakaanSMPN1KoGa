@@ -44,7 +44,7 @@ class Router {
         echo "</div>";
     }
 
-    private function resolveUri(): string {
+    public function resolveUri(): string {
         // 1. URL query param (e.g. index.php?url=admin/dashboard)
         if (!empty($_GET['url'])) {
             $uri = trim((string)$_GET['url'], '/');
@@ -72,6 +72,11 @@ class Router {
             $uri = substr($uri, 4);
         }
 
+        // Strip leading 'api/' if routed through serverless bridge
+        if (strpos($uri, 'api/') === 0) {
+            $uri = substr($uri, 4);
+        }
+
         return trim($uri, '/');
     }
 
@@ -90,11 +95,17 @@ class Router {
         die("Handler tidak ditemukan: {$controllerClass}@{$method}");
     }
 
-    private function getBaseUrl(string $path = ''): string {
-        $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+    public function getBaseUrl(string $path = ''): string {
+        $scheme = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')) ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $script = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
         $dir = rtrim(str_replace(basename($script), '', $script), '/\\');
+
+        // Di Vercel serverless, hilangkan prefix /api dari base URL publik
+        if ($dir === '/api' || str_ends_with($dir, '/api')) {
+            $dir = substr($dir, 0, -4);
+        }
+
         return rtrim("{$scheme}://{$host}{$dir}", '/') . '/' . ltrim($path, '/');
     }
 }

@@ -7,8 +7,12 @@
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 ini_set('display_errors', '1');
 
+// Pastikan session path aman di serverless / read-only filesystem (/tmp)
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    if (function_exists('session_save_path') && (!is_dir(session_save_path()) || !is_writable(session_save_path()))) {
+        @session_save_path('/tmp');
+    }
+    @session_start();
 }
 
 // Autoload Core Classes
@@ -20,6 +24,79 @@ require_once __DIR__ . '/controllers/KatalogController.php';
 
 // Instantiate Router
 $router = new Router();
+
+// Verifikasi status koneksi database (Cegah crash serverless jika belum terhubung)
+$db = Database::getConnection();
+if ($db === null && !in_array($router->resolveUri(), ['diagram'])) {
+    $dbErr = Database::getError();
+    $config = require __DIR__ . '/config/database.php';
+    http_response_code(503);
+    ?>
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Database Cloud Belum Terhubung - SMPN 1 Kota Gajah</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    </head>
+    <body class="bg-light d-flex align-items-center min-vh-100 py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="card shadow border-0 rounded-4 overflow-hidden">
+                        <div class="card-header bg-danger text-white py-3 px-4">
+                            <h5 class="mb-0 fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Koneksi Database Cloud Belum Terhubung</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <p class="text-secondary">Aplikasi berhasil aktif di Vercel Serverless, namun saat ini belum dapat terhubung ke database cloud Anda.</p>
+                            
+                            <div class="alert alert-danger py-2 px-3 small">
+                                <strong>Log Sistem:</strong> <?= htmlspecialchars($dbErr ?: 'Koneksi ke host database tidak merespons.') ?>
+                            </div>
+
+                            <div class="bg-white border rounded-3 p-3 mb-4">
+                                <h6 class="fw-bold text-dark mb-1">Host Database Terdeteksi:</h6>
+                                <code class="text-primary fs-6"><?= htmlspecialchars($config['host']) ?>:<?= (int)$config['port'] ?></code>
+                                <div class="small text-muted mt-1">Nama Database: <code><?= htmlspecialchars($config['database']) ?></code> | SSL: <code><?= $config['ssl'] ? 'Aktif' : 'Non-aktif' ?></code></div>
+                            </div>
+
+                            <h6 class="fw-bold text-dark">Langkah Perbaikan di Vercel:</h6>
+                            <ol class="small text-muted mb-4">
+                                <li class="mb-2">Buka Dashboard Vercel &rarr; Pilih proyek Anda &rarr; Masuk ke menu <strong>Settings</strong> &rarr; <strong>Environment Variables</strong>.</li>
+                                <li class="mb-2">Pastikan variabel berikut sudah terdaftar dengan kredensial TiDB Cloud:
+                                    <div class="table-responsive mt-1">
+                                        <table class="table table-sm table-bordered mb-0">
+                                            <thead class="table-light"><tr><th>Key</th><th>Contoh Value</th></tr></thead>
+                                            <tbody>
+                                                <tr><td><code>DB_HOST</code></td><td><code>gateway01.ap-southeast-1.prod.aws.tidbcloud.com</code></td></tr>
+                                                <tr><td><code>DB_PORT</code></td><td><code>4000</code></td></tr>
+                                                <tr><td><code>DB_NAME</code></td><td><code>db_perpustakaan</code></td></tr>
+                                                <tr><td><code>DB_USER</code></td><td><code>xxxxxx.root</code></td></tr>
+                                                <tr><td><code>DB_PASS</code></td><td><code>PasswordTiDBAnda</code></td></tr>
+                                                <tr><td><code>DB_SSL</code></td><td><code>true</code></td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </li>
+                                <li class="text-danger fw-bold">PENTING: Setelah mengisi Environment Variables, buka menu Deployments &rarr; klik ikon (...) pada deployment &rarr; pilih Redeploy agar variabel baru diterapkan.</li>
+                            </ol>
+                            
+                            <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                                <a href="diagram_perpustakaan.html" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-diagram-project me-1"></i>Buka Diagram ERD</a>
+                                <button onclick="location.reload()" class="btn btn-primary btn-sm"><i class="fa-solid fa-rotate-right me-1"></i>Muat Ulang Halaman</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit;
+}
 
 // ==========================================
 // KATALOG PUBLIK (OPAC - GUEST / SISWA)

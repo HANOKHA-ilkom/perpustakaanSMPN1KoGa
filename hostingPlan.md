@@ -44,17 +44,15 @@ Menginstruksikan Vercel agar menjalankan kode PHP melalui runtime serverless dan
 ```json
 {
   "functions": {
-    "api/**/*.php": {
-      "runtime": "vercel-php@0.7.3"
-    },
-    "index.php": {
+    "api/index.php": {
       "runtime": "vercel-php@0.7.3"
     }
   },
   "routes": [
     { "src": "/assets/(.*)", "dest": "/assets/$1" },
     { "src": "/cover_buku/(.*)", "dest": "/cover_buku/$1" },
-    { "src": "/(.*)", "dest": "/index.php" }
+    { "src": "/diagram_perpustakaan.html", "dest": "/diagram_perpustakaan.html" },
+    { "src": "/(.*)", "dest": "/api/index.php" }
   ]
 }
 ```
@@ -116,24 +114,54 @@ return [
    git add .
    git commit -m "Siap deploy Vercel + TiDB Cloud"
    git branch -M main
-   git remote add origin https://github.com/USERNAME/NAMA_REPO.git
+   git remote add origin https://github.com/HANOKHA-ilkom/perpustakaanSMPN1KoGa.git
    git push -u origin main
    ```
 
 ---
 
-### Tahap 4: Import dan Deploy di Vercel
-1. Buka dashboard [vercel.com](https://vercel.com) -> Klik **Add New...** -> **Project**.
-2. Pilih repository GitHub perpustakaan Anda -> Klik **Import**.
-3. Di bagian **Environment Variables**, tambahkan variabel berikut sesuai kredensial cloud database:
-   - `DB_HOST`: *(contoh: gateway01.ap-southeast-1.prod.aws.tidbcloud.com)*
-   - `DB_PORT`: *(contoh: 4000)*
-   - `DB_NAME`: `db_perpustakaan` (atau nama database di cluster)
-   - `DB_USER`: *(user dari TiDB Cloud)*
-   - `DB_PASS`: *(password dari TiDB Cloud)*
-   - `DB_SSL`: `true`
-4. Klik tombol **Deploy**.
-5. Tunggu 1–2 menit hingga proses build selesai dan Vercel memberikan domain publik (contoh: `perpus-smpn1.vercel.app`).
+### Tahap 4: Import dan Deploy di Vercel (Panduan Rinci Langkah demi Langkah)
+
+1. **Navigasi ke Halaman Import Proyek:**
+   - Buka browser dan login ke [vercel.com](https://vercel.com) menggunakan akun GitHub Anda.
+   - Pada halaman utama Dashboard Vercel, klik tombol **"Add New..."** di pojok kanan atas, lalu pilih **"Project"**.
+
+2. **Memilih Repositori (Import Git Repository):**
+   - Pada kolom *Import Git Repository*, cari nama repositori Anda (contoh: `perpustakaanSMPN1KoGa`).
+   - *(Tips jika repositori tidak muncul)*: Klik dropdown akun GitHub di samping pencarian -> pilih **Configure GitHub App** -> pastikan repositori perpustakaan sudah dicentang izin aksesnya -> klik **Save**.
+   - Klik tombol **"Import"** berwarna biru di samping repositori tersebut.
+
+3. **Konfigurasi Project Settings:**
+   - **Project Name:** Nama subdomain Vercel Anda (misal: `perpus-smpn1-kotagajah`). Nama ini yang akan menjadi alamat URL Anda: `https://perpus-smpn1-kotagajah.vercel.app`.
+   - **Framework Preset:** Biarkan terisi **"Other"** (Vercel akan otomatis mengenali konfigurasi dari berkas `vercel.json`).
+   - **Root Directory:** Tetap `./` (default, tidak perlu diubah).
+   - **Build and Output Settings:** Biarkan kosong / non-aktif (tidak perlu `Build Command` atau `Output Directory` karena ditangani langsung oleh runtime `vercel-php`).
+
+4. **Pengisian Environment Variables (Bagian Paling Krusial):**
+   - Klik / buka bagian accordion **"Environment Variables"**.
+   - Masukkan pasangan **Key** dan **Value** berikut satu per satu (setiap selesai memasukkan satu baris, klik tombol **"Add"**):
+
+     | Key | Contoh Value | Keterangan |
+     |---|---|---|
+     | `DB_HOST` | `gateway01.ap-southeast-1.prod.aws.tidbcloud.com` | Hostname cluster TiDB Cloud / Aiven Anda |
+     | `DB_PORT` | `4000` | Port database (TiDB memakai `4000`, standar MySQL memakai `3306`) |
+     | `DB_NAME` | `db_perpustakaan` | Nama database yang Anda buat di Cloud |
+     | `DB_USER` | `xxxxxx.root` | Username akun cluster cloud Anda |
+     | `DB_PASS` | `PasswordClusterAnda123` | Password cluster cloud Anda |
+     | `DB_SSL` | `true` | **Wajib diisi `true`** agar koneksi terenkripsi SSL aktif |
+
+     *(Catatan Alternatif: Jika penyedia cloud memberikan satu baris Connection String utuh, Anda juga bisa cukup mengisi `DATABASE_URL` dengan format `mysql://user:pass@host:port/db_perpustakaan`).*
+
+5. **Eksekusi Deployment:**
+   - Klik tombol biru **"Deploy"** di bagian bawah.
+   - Anda akan dialihkan ke layar proses *Building*. Vercel akan otomatis:
+     - Mengunduh dependensi runtime serverless `vercel-php@0.7.3`.
+     - Mengompilasi rute `vercel.json` dan menghubungkan jembatan `api/index.php`.
+   - Tunggu sekitar 1–2 menit sampai muncul pesan animasi perayaan (*Congratulations!*).
+
+6. **Membuka Aplikasi & Menangani Troubleshooting Log:**
+   - Klik gambar cuplikan tampilan web (*preview thumbnail*) atau klik tombol **"Continue to Dashboard"** lalu buka domain publik yang diberikan.
+   - **Jika terjadi kendala / error 500:** Buka tab **Deployments** -> klik deployment yang aktif -> pilih tab **Functions / Runtime Logs** untuk melihat pesan error log PHP secara langsung.
 
 ---
 

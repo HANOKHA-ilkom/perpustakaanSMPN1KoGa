@@ -36,10 +36,15 @@ class Controller {
     }
 
     public function baseUrl(string $path = ''): string {
-        $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+        $scheme = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')) ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $script = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
         $dir = rtrim(str_replace(basename($script), '', $script), '/\\');
+
+        // Di Vercel serverless, hilangkan prefix /api dari base URL publik
+        if ($dir === '/api' || str_ends_with($dir, '/api')) {
+            $dir = substr($dir, 0, -4);
+        }
         
         $base = "{$scheme}://{$host}{$dir}";
         return rtrim($base, '/') . '/' . ltrim($path, '/');
