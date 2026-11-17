@@ -1,0 +1,9 @@
+# Scratch & Local temporary files
+/scratch/
+*.log
+.env
+
+# OS Files
+Thumbs.db
+Desktop.ini
+.DS_Store

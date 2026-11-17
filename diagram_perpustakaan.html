@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dokumentasi Pemodelan & Diagram Sistem - SMP Negeri 1 Kota Gajah</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+    <!-- Mermaid JS for Interactive Diagrams -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.8.0/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: { curve: 'basis', htmlLabels: true, useMaxWidth: false },
+            sequence: { showSequenceNumbers: true, useMaxWidth: false },
+            er: { useMaxWidth: false }
+        });
+    </script>
+
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --primary-dark: #0f172a;
+            --secondary-color: #3b82f6;
+            --accent-color: #0d9488;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --bg-light: #f8fafc;
+            --card-border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        /* Sidebar Styling */
+        #sidebar {
+            width: 290px;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            color: #fff;
+            overflow-y: auto;
+            z-index: 1040;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        #sidebar .nav-link {
+            color: #94a3b8;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            margin: 2px 14px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+
+        #sidebar .nav-link:hover, #sidebar .nav-link.active {
+            color: #ffffff;
+            background: rgba(59, 130, 246, 0.2);
+            border-left: 4px solid #38bdf8;
+            padding-left: 1rem;
+        }
+
+        #sidebar .sidebar-heading {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-weight: 700;
+            color: #64748b;
+            padding: 1.2rem 1.4rem 0.4rem;
+        }
+
+        /* Main Content */
+        #main-wrapper {
+            margin-left: 290px;
+            padding: 2rem 2.5rem 4rem;
+            min-height: 100vh;
+        }
+
+        /* Cards & Containers */
+        .diagram-card {
+            background: #ffffff;
+            border-radius: 16px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05);
+            margin-bottom: 2.5rem;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .diagram-card:hover {
+            box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.09);
+        }
+
+        .diagram-card-header {
+            padding: 1.25rem 1.75rem;
+            background: #ffffff;
+            border-bottom: 1px solid var(--card-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .diagram-card-body {
+            padding: 1.75rem;
+        }
+
+        /* Diagram Viewport & Interactive Zoom */
+        .diagram-viewport-container {
+            position: relative;
+            background: #fbfcfe;
+            border: 1px solid #edf2f7;
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .diagram-viewport {
+            overflow: auto;
+            max-height: 650px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px dashed #e2e8f0;
+            cursor: grab;
+        }
+
+        .diagram-viewport:active {
+            cursor: grabbing;
+        }
+
+        .diagram-viewport .mermaid {
+            display: inline-block;
+            margin: 0 auto;
+            transform-origin: top center;
+            transition: transform 0.2s ease;
+        }
+
+        /* Prevent SVG from shrinking to tiny unreadable text */
+        .diagram-viewport .mermaid svg {
+            max-width: none !important;
+            height: auto !important;
+            min-width: 600px;
+            font-size: 15px !important;
+        }
+
+        /* Specific min-widths for complex diagrams */
+        #erd-section .mermaid svg { min-width: 950px; }
+        #usecase-section .mermaid svg { min-width: 880px; }
+        #flowchart-5-1 .mermaid svg { min-width: 780px; }
+        #class-section .mermaid svg { min-width: 820px; }
+        #sequence-section .mermaid svg { min-width: 880px; }
+        #dfd-section .mermaid svg { min-width: 800px; }
+        #deployment-section .mermaid svg { min-width: 780px; }
+
+        /* Zoom Control Bar */
+        .zoom-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+        }
+
+        .zoom-btn {
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .zoom-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        /* Hero Banner */
+        .hero-banner {
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #0d9488 100%);
+            color: #fff;
+            padding: 2.5rem;
+            border-radius: 20px;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 12px 30px -8px rgba(30, 58, 138, 0.3);
+        }
+
+        /* Badges & Tables */
+        .badge-pk {
+            background-color: #ef4444;
+            color: white;
+            font-weight: 700;
+            font-size: 0.72rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-fk {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: 700;
+            font-size: 0.72rem;
+            padding: 4px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .table-custom {
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+        }
+
+        .table-custom thead th {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.9rem 1rem;
+            border: none;
+        }
+
+        .table-custom tbody td {
+            font-size: 0.9rem;
+            padding: 0.85rem 1rem;
+            vertical-align: middle;
+            border-color: #f1f5f9;
+        }
+
+        /* Floating Controls */
+        .toolbar-btn {
+            background: white;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #334155;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: #f1f5f9;
+            color: var(--primary-color);
+        }
+
+        /* Fullscreen Modal View */
+        #modalDiagramContent {
+            overflow: auto;
+            max-height: 80vh;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        #modalDiagramContent svg {
+            min-width: 900px !important;
+            height: auto !important;
+        }
+
+        @media (max-width: 992px) {
+            #sidebar {
+                transform: translateX(-100%);
+            }
+            #sidebar.show {
+                transform: translateX(0);
+            }
+            #main-wrapper {
+                margin-left: 0;
+                padding: 1.25rem;
+            }
+        }
+
+        /* Print Mode */
+        @media print {
+            #sidebar, .no-print, .zoom-toolbar, .toolbar-btn {
+                display: none !important;
+            }
+            #main-wrapper {
+                margin-left: 0;
+                padding: 0;
+            }
+            .diagram-card {
+                box-shadow: none;
+                border: 1px solid #ccc;
+                page-break-inside: avoid;
+            }
+            .diagram-viewport {
+                max-height: none !important;
+                overflow: visible !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <nav id="sidebar">
+        <div class="p-3 border-bottom border-secondary border-opacity-25 d-flex align-items-center gap-2">
+            <i class="fa-solid fa-book-bookmark text-primary fs-3"></i>
+            <div>
+                <h6 class="mb-0 fw-bold text-white">SMPN 1 Kota Gajah</h6>
+                <small class="text-secondary" style="font-size: 0.72rem;">Sistem Informasi Perpustakaan</small>
+            </div>
+        </div>
+
+        <div class="py-2">
+            <div class="sidebar-heading">Ringkasan & Inti</div>
+            <a href="#overview" class="nav-link active"><i class="fa-solid fa-layer-group"></i> Ringkasan Sistem</a>
+            <a href="#primary-key-spec" class="nav-link"><i class="fa-solid fa-key text-warning"></i> Definisi Primary Key</a>
+            <a href="#erd-section" class="nav-link"><i class="fa-solid fa-network-wired text-info"></i> ERD (Database 3NF)</a>
+
+            <div class="sidebar-heading">Diagram Fungsional & Alur</div>
+            <a href="#usecase-section" class="nav-link"><i class="fa-solid fa-user-gear text-success"></i> Use Case Diagram</a>
+            <a href="#activity-section" class="nav-link"><i class="fa-solid fa-diagram-project text-primary"></i> Activity Diagram</a>
+            <a href="#flowchart-section" class="nav-link"><i class="fa-solid fa-arrow-trend-up text-danger"></i> Flowchart Sistem</a>
+
+            <div class="sidebar-heading">Diagram UML & Arsitektur</div>
+            <a href="#class-section" class="nav-link"><i class="fa-solid fa-cubes text-info"></i> Class Diagram (MVC)</a>
+            <a href="#sequence-section" class="nav-link"><i class="fa-solid fa-arrows-split-up-and-left text-warning"></i> Sequence Diagram</a>
+            <a href="#state-section" class="nav-link"><i class="fa-solid fa-clock-rotate-left text-success"></i> State Machine Diagram</a>
+            <a href="#dfd-section" class="nav-link"><i class="fa-solid fa-arrows-spin text-info"></i> DFD Level 0 & 1</a>
+            <a href="#deployment-section" class="nav-link"><i class="fa-solid fa-server text-primary"></i> Deployment Diagram</a>
+        </div>
+
+        <div class="p-3 mt-4 border-top border-secondary border-opacity-25">
+            <div class="small text-secondary mb-1">Mata Kuliah:</div>
+            <div class="fw-semibold text-white small"><i class="fa-solid fa-graduation-cap me-1"></i> Basis Data Lanjut (3NF)</div>
+            <div class="text-secondary" style="font-size: 0.75rem; margin-top: 4px;">Modernisasi Skripsi S1 (2024)</div>
+        </div>
+    </nav>
+
+    <!-- Main Content Wrapper -->
+    <main id="main-wrapper">
+
+        <!-- Mobile Toggle Button -->
+        <div class="d-lg-none mb-3 d-flex justify-content-between align-items-center bg-white p-2 px-3 rounded shadow-sm">
+            <span class="fw-bold"><i class="fa-solid fa-diagram-project me-2 text-primary"></i>Diagram Perpustakaan</span>
+            <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('sidebar').classList.toggle('show')">
+                <i class="fa-solid fa-bars"></i> Menu
+            </button>
+        </div>
+
+        <!-- Hero Header -->
+        <section id="overview" class="hero-banner">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <span class="badge bg-white text-primary fw-bold px-3 py-2 mb-2 rounded-pill shadow-sm">
+                        <i class="fa-solid fa-database me-1"></i> Dokumen Pemodelan & Arsitektur Lengkap
+                    </span>
+                    <h2 class="fw-bolder mb-2 text-white">Sistem Informasi Perpustakaan SMP Negeri 1 Kota Gajah</h2>
+                    <p class="text-white-50 mb-0 max-w-750">
+                        Visualisasi menyeluruh perancangan sistem: <strong>Entity Relationship Diagram (ERD)</strong>, 
+                        <strong>Spesifikasi Primary Key (PK) & Foreign Key (FK)</strong>, <strong>Use Case Diagram</strong>, 
+                        <strong>Activity Diagram</strong>, <strong>Flowchart</strong>, serta diagram pelengkap (<strong>Class, Sequence, State, DFD & Deployment</strong>) 
+                        dengan arsitektur MVC dan MySQL InnoDB berintegritas tinggi.
+                    </p>
+                </div>
+                <div class="d-flex gap-2 no-print">
+                    <button class="toolbar-btn" onclick="window.print()">
+                        <i class="fa-solid fa-print"></i> Cetak Dokumen / PDF
+                    </button>
+                    <a href="index.php" class="toolbar-btn" target="_blank">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Aplikasi
+                    </a>
+                </div>
+            </div>
+
+            <hr class="border-white opacity-25 my-4">
+
+            <div class="row g-3 text-white">
+                <div class="col-6 col-md-3">
+                    <div class="small text-white-50"><i class="fa-solid fa-table me-1"></i> Entitas Tabel</div>
+                    <div class="fs-4 fw-bold">7 Master & Transaksi</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="small text-white-50"><i class="fa-solid fa-bolt me-1"></i> Database Triggers</div>
+                    <div class="fs-4 fw-bold">4 Triggers Otomatis</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="small text-white-50"><i class="fa-solid fa-eye me-1"></i> Database Views</div>
+                    <div class="fs-4 fw-bold">2 Views Kompleks</div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="small text-white-50"><i class="fa-solid fa-shield-halved me-1"></i> Normalisasi</div>
+                    <div class="fs-4 fw-bold">3NF Terverifikasi</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- SECTION 1: DEFINISI PRIMARY KEY (WAJIB & RINCI) -->
+        <!-- ======================================================== -->
+        <section id="primary-key-spec" class="diagram-card">
+            <div class="diagram-card-header bg-light">
+                <div>
+                    <h5 class="fw-bold mb-1 text-primary">
+                        <i class="fa-solid fa-key text-warning me-2"></i>1. Spesifikasi Lengkap & Definisi Primary Key (PK)
+                    </h5>
+                    <small class="text-muted">Definisi integritas entitas, tipe data, auto-increment, dan aturan kunci utama pada setiap tabel.</small>
+                </div>
+                <span class="badge bg-danger px-3 py-2"><i class="fa-solid fa-circle-check me-1"></i> Standar Integritas Entitas</span>
+            </div>
+            <div class="diagram-card-body">
+                <div class="alert alert-info border-0 rounded-3 mb-4 d-flex align-items-center gap-3">
+                    <i class="fa-solid fa-circle-info fs-3 text-info"></i>
+                    <div>
+                        <strong>Ketentuan Primary Key pada Basis Data Lanjut:</strong> Setiap tabel memiliki kolom <em>Surrogate Primary Key</em> bertipe bilangan bulat (<code>INT AUTO_INCREMENT</code>) yang menjamin keunikan mutlak (<em>Entity Integrity</em>), performa indexing binary-search optimal pada mesin <code>InnoDB</code>, serta mencegah dependensi parsial maupun transitif sesuai kaidah <strong>Third Normal Form (3NF)</strong>.
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-custom table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px;">No</th>
+                                <th>Nama Tabel</th>
+                                <th>Primary Key (PK)</th>
+                                <th>Tipe Data</th>
+                                <th>Sifat & Atribut</th>
+                                <th>Natural Key / Unique ID</th>
+                                <th>Relasi / Peran Foreign Key (FK)</th>
+                                <th>Fungsi dalam Sistem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="fw-bold">1</td>
+                                <td><span class="fw-bold text-dark">user</span></td>
+                                <td><span class="badge-pk">id_user</span></td>
+                                <td><code>int(11)</code></td>
+                                <td>NOT NULL, AUTO_INCREMENT</td>
+                                <td><code>kode_user</code> (ADM/AP), <code>username</code></td>
+                                <td>Direferensikan oleh <code>peminjaman.id_user</code></td>
+                                <td>Identifikasi unik untuk seluruh akun pengguna (Administrator dan Siswa/Anggota).</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">2</td>
+                                <td><span class="fw-bold text-dark">kategori</span></td>
+                                <td><span class="badge-pk">id_kategori</span></td>
+                                <td><code>int(11)</code></td>
+                                <td>NOT NULL, AUTO_INCREMENT</td>
+                                <td><code>kode_kategori</code> (K001..K009)</td>
+                                <td>Direferensikan oleh <code>buku.id_kategori</code></td>
+                                <td>Mengklasifikasikan jenis buku (Novel, Cergam, Ensiklopedi, Biografi, dll).</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">3</td>
+                                <td><span class="fw-bold text-dark">penerbit</span></td>
+                                <td><span class="badge-pk">id_penerbit</span></td>
+                                <td><code>int(11)</code></td>
+                                <td>NOT NULL, AUTO_INCREMENT</td>
+                                <td><code>kode_penerbit</code> (P001..P005)</td>
+                                <td>Direferensikan oleh <code>buku.id_penerbit</code></td>
+                                <td>Menampung data master percetakan/penerbit buku terverifikasi.</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">4</td>
+                                <td><span class="fw-bold text-dark">buku</span></td>
+                                <td><span class="badge-pk">id_buku</span></td>
+                                <td><code>int(11)</code></td>
+                                <td>NOT NULL, AUTO_INCREMENT</td>
+                                <td><code>isbn</code></td>
+                                <td>
+                                    Memiliki FK: <span class="badge-fk">id_kategori</span>, <span class="badge-fk">id_penerbit</span>, <span class="badge-fk">id_pengarang</span><br>
+                                    Direferensikan oleh: <code>peminjaman.id_buku</code>
+                                </td>
+                                <td>Kunci utama koleksi buku fisik, stok (baik, rusak, hilang), harga aset buku, cover, dan sinopsis.</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">5</td>
+                                <td><span class="fw-bold text-dark">peminjaman</span></td>
+                                <td><span class="badge-pk">id_peminjaman</span></td>
+                                <td><code>int(11)</code></td>
+                                <td>NOT NULL, AUTO_INCREMENT</td>
+                                <td>- (Nomor Transaksi Otomatis)</td>
+                                <td>
+                                    Memiliki FK: <span class="badge-fk">id_user</span>, <span class="badge-fk">id_admin</span>, <span class="badge-fk">id_buku</span><br>
+                                    Aturan: <code>ON UPDATE CASCADE ON DELETE RESTRICT</code>
+                                </td>
+                                <td>Pusat catatan transaksi sirkulasi (peminjaman, pengembalian, kondisi fisik baik/rusak/hilang, dan denda).</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">6</td>
+                                <td><span class="fw-bold text-dark">pengarang</span></td>
+                                <td><span class="badge-pk">id_pengarang</span></td>
+                                <td><code>int(11)</code></td>
+                                <td>NOT NULL, AUTO_INCREMENT</td>
+                                <td><code>kode_pengarang</code> (AUT001..AUT015)</td>
+                                <td>Direferensikan oleh <span class="badge-fk">buku.id_pengarang</span> (Relasi 1:N FK)</td>
+                                <td>Master data pengarang/novelis, kurasi biografi, dan status keaktifan literasi penulis.</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">7</td>
+                                <td><span class="fw-bold text-dark">identitas</span></td>
+                                <td><span class="badge-pk">id_identitas</span></td>
+                                <td><code>int(11)</code></td>
+                                <td>NOT NULL, AUTO_INCREMENT</td>
+                                <td>Single Row Record (ID = 1)</td>
+                                <td>Entitas Pengaturan Global</td>
+                                <td>Konfigurasi profil resmi sekolah (NPSN, Akreditasi, Kepsek), kontak WA, dan koordinat Google Maps.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-dark"><i class="fa-solid fa-shield-virus text-danger me-2"></i>Integritas Referensial (Referential Integrity Constraints)</h6>
+                            <ul class="small mb-0 text-muted ps-3">
+                                <li><strong>ON UPDATE CASCADE:</strong> Jika nilai ID referensi diperbarui, seluruh child record pada tabel anak akan disinkronkan otomatis.</li>
+                                <li><strong>ON DELETE RESTRICT:</strong> Mencegah penghapusan data master anggota/buku jika masih tercatat dalam transaksi peminjaman aktif.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <h6 class="fw-bold text-dark"><i class="fa-solid fa-bolt text-success me-2"></i>Performance Indexing Kolom</h6>
+                            <ul class="small mb-0 text-muted ps-3">
+                                <li><code>idx_user_role</code> & <code>idx_user_username</code> pada tabel <strong>user</strong> untuk login super-cepat.</li>
+                                <li><code>idx_pinjam_status</code> & <code>idx_pinjam_tanggal</code> untuk akselerasi kueri filter laporan berkala.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- SECTION 2: ERD (ENTITY RELATIONSHIP DIAGRAM) -->
+        <!-- ======================================================== -->
+        <section id="erd-section" class="diagram-card">
+            <div class="diagram-card-header bg-light">
+                <div>
+                    <h5 class="fw-bold mb-1 text-primary">
+                        <i class="fa-solid fa-network-wired text-info me-2"></i>2. Entity Relationship Diagram (ERD) - 3NF
+                    </h5>
+                    <small class="text-muted">Diagram relasi antar entitas, relasi 1:N (One to Many), Primary Key (PK), dan Foreign Key (FK).</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="zoom-toolbar no-print">
+                        <button class="zoom-btn" onclick="zoomIn('erd-section')" title="Perbesar"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                        <button class="zoom-btn" onclick="zoomOut('erd-section')" title="Perkecil"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                        <button class="zoom-btn" onclick="resetZoom('erd-section')" title="Reset"><i class="fa-solid fa-rotate-right"></i></button>
+                        <button class="zoom-btn text-primary" onclick="openModal('erd-section', '2. Entity Relationship Diagram (ERD)')" title="Layar Penuh"><i class="fa-solid fa-expand"></i> Layar Penuh</button>
+                    </div>
+                </div>
+            </div>
+            <div class="diagram-card-body">
+                <p class="text-muted small">
+                    Diagram berikut menggambarkan 8 entitas lengkap pada basis data <code>db_perpustakaan</code>. Garis relasi memperlihatkan relasi formal <em>One-to-Many</em> antara Kategori ke Buku, Penerbit ke Buku, serta Siswa dan Buku ke Transaksi Peminjaman.
+                </p>
+
+                <div class="diagram-viewport-container">
+                    <div class="diagram-viewport">
+                        <div class="mermaid">
+erDiagram
+    USER ||--o{ PEMINJAMAN : "melakukan_pinjam"
+    USER ||--o{ PEMINJAMAN : "dilayani_admin"
+    BUKU ||--o{ PEMINJAMAN : "dipinjam"
+    KATEGORI ||--o{ BUKU : "mengklasifikasikan"
+    PENERBIT ||--o{ BUKU : "menerbitkan"
+    PENGARANG ||--o{ BUKU : "menulis"
+
+    USER {
+        int id_user PK
+        string kode_user
+        string nis
+        string fullname
+        string username
+        string password
+        string kelas
+        string alamat
+        string no_whatsapp
+        string verif
+        string role
+        string jam_aktif
+        string join_date
+        string terakhir_login
+    }
+
+    KATEGORI {
+        int id_kategori PK
+        string kode_kategori
+        string nama_kategori
+    }
+
+    PENERBIT {
+        int id_penerbit PK
+        string kode_penerbit
+        string nama_penerbit
+        string verif_penerbit
+    }
+
+    PENGARANG {
+        int id_pengarang PK
+        string kode_pengarang
+        string nama_pengarang
+        string status
+        text biografi
+    }
+
+    BUKU {
+        int id_buku PK
+        int id_kategori FK
+        int id_penerbit FK
+        int id_pengarang FK
+        string judul_buku
+        string pengarang
+        string tahun_terbit
+        string isbn
+        int j_buku_baik
+        int j_buku_rusak
+        int j_buku_hilang
+        int harga
+        string cover
+        text sinopsis
+    }
+
+    PEMINJAMAN {
+        int id_peminjaman PK
+        int id_user FK
+        int id_admin FK
+        int id_buku FK
+        string nama_anggota
+        string judul_buku
+        string tanggal_peminjaman
+        string tanggal_pengembalian
+        string status_transaksi
+        string kondisi_buku_saat_dipinjam
+        string kondisi_buku_saat_dikembalikan
+        string denda
+    }
+
+    IDENTITAS {
+        int id_identitas PK
+        string nama_app
+        string alamat_app
+        string email_app
+        string nomor_hp
+        string latitude
+        string longitude
+    }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 bg-light rounded-3 border">
+                    <h6 class="fw-bold mb-2 text-dark"><i class="fa-solid fa-code-fork text-primary me-2"></i>Kardinalitas & Derajat Relasi:</h6>
+                    <div class="row g-2 small text-muted">
+                        <div class="col-md-4"><strong>Kategori ke Buku:</strong> <code>1 : N</code> (Satu kategori menampung banyak buku).</div>
+                        <div class="col-md-4"><strong>Penerbit ke Buku:</strong> <code>1 : N</code> (Satu penerbit mencetak banyak buku).</div>
+                        <div class="col-md-4"><strong>Pengarang ke Buku:</strong> <code>1 : N</code> (Satu pengarang menulis banyak koleksi buku).</div>
+                        <div class="col-md-4"><strong>User ke Peminjaman:</strong> <code>1 : N</code> (Satu anggota melakukan banyak transaksi pinjam).</div>
+                        <div class="col-md-4"><strong>Admin ke Peminjaman:</strong> <code>1 : N</code> (Satu admin/petugas melayani banyak transaksi sirkulasi).</div>
+                        <div class="col-md-4"><strong>Buku ke Peminjaman:</strong> <code>1 : N</code> (Satu buku tercatat dalam banyak riwayat transaksi).</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- SECTION 3: USE CASE DIAGRAM -->
+        <!-- ======================================================== -->
+        <section id="usecase-section" class="diagram-card">
+            <div class="diagram-card-header bg-light">
+                <div>
+                    <h5 class="fw-bold mb-1 text-primary">
+                        <i class="fa-solid fa-user-gear text-success me-2"></i>3. Use Case Diagram
+                    </h5>
+                    <small class="text-muted">Interaksi fungsional antara Aktor (Administrator & Siswa/Anggota) dengan Sistem Informasi Perpustakaan.</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="zoom-toolbar no-print">
+                        <button class="zoom-btn" onclick="zoomIn('usecase-section')" title="Perbesar"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                        <button class="zoom-btn" onclick="zoomOut('usecase-section')" title="Perkecil"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                        <button class="zoom-btn" onclick="resetZoom('usecase-section')" title="Reset"><i class="fa-solid fa-rotate-right"></i></button>
+                        <button class="zoom-btn text-primary" onclick="openModal('usecase-section', '3. Use Case Diagram')" title="Layar Penuh"><i class="fa-solid fa-expand"></i> Layar Penuh</button>
+                    </div>
+                </div>
+            </div>
+            <div class="diagram-card-body">
+                <div class="diagram-viewport-container">
+                    <div class="diagram-viewport">
+                        <div class="mermaid">
+flowchart LR
+    %% Aktor
+    Admin(["fa:fa-user-shield Administrator / Petugas"])
+    Siswa(["fa:fa-user-graduate Siswa / Anggota"])
+    Publik(["fa:fa-users Pengunjung / Publik OPAC"])
+
+    %% Batas Sistem
+    subgraph PerpusSys [" Sistem Informasi Perpustakaan SMPN 1 Kota Gajah "]
+        UC_Login(["UC01: Autentikasi / Login"])
+        UC_Register(["UC02: Registrasi Siswa Baru"])
+        UC_DashAdmin(["UC03: Kelola Dashboard & Statistik"])
+        UC_Anggota(["UC04: Kelola Data Anggota"])
+        UC_Buku(["UC05: Kelola Master Buku & Sampul"])
+        UC_Kategori(["UC06: Kelola Kategori Buku"])
+        UC_Penerbit(["UC07: Kelola Master Penerbit"])
+        UC_Pengarang(["UC08: Kelola Kurasi Pengarang"])
+        UC_Petugas(["UC09: Kelola Administrator"])
+        UC_PinjamSiswa(["UC10: Sirkulasi Peminjaman & Scan Barcode"])
+        UC_KembaliSiswa(["UC11: Sirkulasi Pengembalian (Baik/Rusak/Hilang)"])
+        UC_KalkulasiDenda(["UC12: Kalkulasi Denda & Ganti Buku"])
+        UC_Laporan(["UC13: Filter & Cetak Laporan Kop Surat"])
+        UC_Identitas(["UC14: Kelola Identitas Sekolah & Maps"])
+        UC_Katalog(["UC15: Katalog Publik OPAC & Live Search"])
+        UC_AI(["UC16: Analisis AI Sirkulasi & Koleksi Terlaris"])
+        UC_Profil(["UC17: Kelola Profil & Ganti Password"])
+    end
+
+    %% Relasi Publik
+    Publik --> UC_Katalog
+
+    %% Relasi Siswa
+    Siswa --> UC_Login
+    Siswa --> UC_Register
+    Siswa --> UC_Katalog
+    Siswa --> UC_PinjamSiswa
+    Siswa --> UC_KembaliSiswa
+    Siswa --> UC_Profil
+
+    %% Relasi Admin
+    Admin --> UC_Login
+    Admin --> UC_DashAdmin
+    Admin --> UC_Anggota
+    Admin --> UC_Buku
+    Admin --> UC_Kategori
+    Admin --> UC_Penerbit
+    Admin --> UC_Pengarang
+    Admin --> UC_Petugas
+    Admin --> UC_PinjamSiswa
+    Admin --> UC_KembaliSiswa
+    Admin --> UC_Laporan
+    Admin --> UC_Identitas
+    Admin --> UC_AI
+    Admin --> UC_Katalog
+
+    %% Include / Extend
+    UC_PinjamSiswa -.->|include| UC_Login
+    UC_KembaliSiswa -.->|include| UC_Login
+    UC_KembaliSiswa -.->|extend| UC_KalkulasiDenda
+    UC_Laporan -.->|include| UC_Login
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-3">
+                    <div class="col-md-6">
+                        <div class="border rounded-3 p-3 bg-white">
+                            <h6 class="fw-bold text-dark"><i class="fa-solid fa-user-shield text-primary me-2"></i>Hak Akses Administrator</h6>
+                            <ul class="small text-muted ps-3 mb-0">
+                                <li>Manajemen Penuh: Anggota, Buku, Kategori, Penerbit, Admin.</li>
+                                <li>Pengawasan Transaksi Peminjaman & Pengembalian seluruh siswa.</li>
+                                <li>Penyaringan & Pencetakan Laporan Resmi dengan Kop Surat SMPN 1 Kota Gajah.</li>
+                                <li>Konfigurasi Master Identitas Sekolah (Logo, Kontak, Peta Google Maps).</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded-3 p-3 bg-white">
+                            <h6 class="fw-bold text-dark"><i class="fa-solid fa-user-graduate text-success me-2"></i>Hak Akses Siswa / Anggota</h6>
+                            <ul class="small text-muted ps-3 mb-0">
+                                <li>Registrasi mandiri dengan NIS, Kelas, dan Nama Lengkap.</li>
+                                <li>Peminjaman buku mandiri (dibatasi ketersediaan stok fisik oleh Trigger).</li>
+                                <li>Pengembalian buku mandiri dengan cek kondisi fisik dan denda otomatis.</li>
+                                <li>Pencarian koleksi interaktif melalui Katalog Publik (OPAC) dan pemantauan riwayat peminjaman.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- SECTION 4: ACTIVITY DIAGRAM -->
+        <!-- ======================================================== -->
+        <section id="activity-section" class="diagram-card">
+            <div class="diagram-card-header bg-light">
+                <div>
+                    <h5 class="fw-bold mb-1 text-primary">
+                        <i class="fa-solid fa-diagram-project text-primary me-2"></i>4. Activity Diagrams
+                    </h5>
+                    <small class="text-muted">Pemodelan aktivitas bisnis terperinci (Login, Peminjaman, Pengembalian, dan Olah Data).</small>
+                </div>
+                <span class="badge bg-primary">Business Workflow</span>
+            </div>
+            <div class="diagram-card-body">
+
+                <!-- Sub-Activity 1: Peminjaman -->
+                <div id="act-4-1" class="mb-5">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-dark border-start border-4 border-primary ps-2 mb-0">
+                            <i class="fa-solid fa-book-reader text-primary me-2"></i>Activity 4.1: Alur Peminjaman Buku Mandiri Siswa & Validasi Database Trigger
+                        </h6>
+                        <div class="zoom-toolbar no-print">
+                            <button class="zoom-btn" onclick="zoomIn('act-4-1')"><i class="fa-solid fa-plus"></i></button>
+                            <button class="zoom-btn" onclick="zoomOut('act-4-1')"><i class="fa-solid fa-minus"></i></button>
+                            <button class="zoom-btn" onclick="resetZoom('act-4-1')">100%</button>
+                            <button class="zoom-btn text-primary" onclick="openModal('act-4-1', 'Activity 4.1: Alur Peminjaman Buku')"><i class="fa-solid fa-expand"></i></button>
+                        </div>
+                    </div>
+                    <div class="diagram-viewport-container">
+                        <div class="diagram-viewport">
+                            <div class="mermaid">
+flowchart TD
+    Start([Mulai]) --> A1["Siswa Membuka Menu Peminjaman"]
+    A1 --> A2["Sistem Memuat Katalog Buku & Hitung Buku Aktif Dipinjam"]
+    A2 --> A3["Siswa Memilih Judul Buku & Isi Tanggal Pinjam"]
+    A3 --> A4["Siswa Menekan Tombol Pinjam Buku"]
+    A4 --> A5{"Validasi Input Form"}
+    A5 -- Ada Field Kosong --> A6["Tampilkan Pesan Peringatan Input"]
+    A6 --> A3
+    A5 -- Data Lengkap --> A7["Kirim Request POST ke SiswaController"]
+    
+    subgraph DatabaseEngine [" MySQL Database Engine (InnoDB) "]
+        A7 --> A8["Eksekusi Query INSERT ke Tabel peminjaman"]
+        A8 --> T1{"Trigger: trg_sebelum_pinjam_cek_stok"}
+        T1 -- "Stok Baik <= 0" --> T1_Fail["SIGNAL SQLSTATE 45000: Tolak Peminjaman"]
+        T1 -- "Stok Tersedia > 0" --> T2["Lolos Validasi Integritas"]
+        T2 --> DB_Insert[("Catat Transaksi ke Tabel peminjaman")]
+        DB_Insert --> T3["Trigger: trg_setelah_pinjam_kurang_stok"]
+        T3 --> Stock_Dec["Update tabel buku: j_buku_baik = j_buku_baik - 1"]
+    end
+
+    T1_Fail --> Resp_Fail["Tampilkan Alert Gagal: Stok Habis"]
+    Resp_Fail --> EndFail([Selesai])
+    Stock_Dec --> Resp_Success["Tampilkan Alert Berhasil & Redirect Riwayat"]
+    Resp_Success --> EndSuccess([Selesai])
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub-Activity 2: Pengembalian -->
+                <div id="act-4-2" class="mb-5">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-dark border-start border-4 border-success ps-2 mb-0">
+                            <i class="fa-solid fa-hand-holding-dollar text-success me-2"></i>Activity 4.2: Alur Pengembalian Buku, Cek Kondisi & Denda Keterlambatan
+                        </h6>
+                        <div class="zoom-toolbar no-print">
+                            <button class="zoom-btn" onclick="zoomIn('act-4-2')"><i class="fa-solid fa-plus"></i></button>
+                            <button class="zoom-btn" onclick="zoomOut('act-4-2')"><i class="fa-solid fa-minus"></i></button>
+                            <button class="zoom-btn" onclick="resetZoom('act-4-2')">100%</button>
+                            <button class="zoom-btn text-primary" onclick="openModal('act-4-2', 'Activity 4.2: Alur Pengembalian Buku')"><i class="fa-solid fa-expand"></i></button>
+                        </div>
+                    </div>
+                    <div class="diagram-viewport-container">
+                        <div class="diagram-viewport">
+                            <div class="mermaid">
+flowchart TD
+    B_Start([Mulai]) --> B1["Siswa atau Petugas Membuka Menu Pengembalian"]
+    B1 --> B2["Pilih Catatan Peminjaman Aktif Sedang Dipinjam"]
+    B2 --> B3["Input Tanggal Pengembalian & Kondisi Buku: Baik, Rusak, atau Hilang"]
+    B3 --> B4{"Cek Kondisi Fisik Buku"}
+    B4 -- Rusak --> B5["Hitung Biaya Denda Ganti Rugi Kerusakan"]
+    B4 -- Hilang --> B_Hilang["Hitung Biaya Penggantian Sesuai Harga Aset Buku"]
+    B4 -- Baik --> B6{"Cek Selisih Tanggal: Lebih dari 7 Hari?"}
+    B6 -- Ya Terlambat --> B7["Hitung Denda Keterlambatan per Hari"]
+    B6 -- Tepat Waktu --> B8["Status Denda: Tidak Ada Denda"]
+    B5 --> B9["Simpan Data & Submit Form"]
+    B_Hilang --> B9
+    B7 --> B9
+    B8 --> B9
+
+    subgraph DB_Update [" MySQL Database Engine & Trigger "]
+        B9 --> B10["UPDATE peminjaman: status Selesai, tgl_kembali, denda"]
+        B10 --> T_Return{"Trigger: trg_setelah_kembali_tambah_stok"}
+        T_Return -- Kondisi Rusak --> TR1["Update buku: j_buku_rusak = j_buku_rusak + 1"]
+        T_Return -- Kondisi Baik --> TR2["Update buku: j_buku_baik = j_buku_baik + 1"]
+        T_Return -- Kondisi Hilang --> TR3["Update buku: j_buku_hilang = j_buku_hilang + 1"]
+    end
+
+    TR1 --> B11["Notifikasi Pengembalian Berhasil Disimpan"]
+    TR2 --> B11
+    TR3 --> B11
+    B11 --> B_End([Selesai])
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub-Activity 3: Autentikasi (SYNTAX FIXED & ENHANCED) -->
+                <div id="act-4-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-dark border-start border-4 border-warning ps-2 mb-0">
+                            <i class="fa-solid fa-shield-halved text-warning me-2"></i>Activity 4.3: Autentikasi Pengguna & Penentuan Role Session
+                        </h6>
+                        <div class="zoom-toolbar no-print">
+                            <button class="zoom-btn" onclick="zoomIn('act-4-3')"><i class="fa-solid fa-plus"></i></button>
+                            <button class="zoom-btn" onclick="zoomOut('act-4-3')"><i class="fa-solid fa-minus"></i></button>
+                            <button class="zoom-btn" onclick="resetZoom('act-4-3')">100%</button>
+                            <button class="zoom-btn text-primary" onclick="openModal('act-4-3', 'Activity 4.3: Autentikasi Pengguna & Role Session')"><i class="fa-solid fa-expand"></i></button>
+                        </div>
+                    </div>
+                    <div class="diagram-viewport-container">
+                        <div class="diagram-viewport">
+                            <div class="mermaid">
+flowchart TD
+    C_Start([Mulai]) --> C1["Pengguna Mengakses Form Login"]
+    C1 --> C2["Input Username & Password"]
+    C2 --> C3["Submit Form POST /login"]
+    C3 --> C4["AuthController Verifikasi Kredensial via PerpusModel"]
+    C4 --> C5{"Akun Ditemukan & Cocok?"}
+    C5 -- Tidak Cocok --> C6["Set Flash Data: Username atau Password Salah"]
+    C6 --> C1
+    C5 -- Cocok --> C7["Perbarui Riwayat terakhir_login"]
+    C7 --> C8["Inisialisasi Sesi PHP: id_user, role, username"]
+    C8 --> C9{"Pengecekan Role Pengguna"}
+    C9 -- Administrator --> C10["Redirect ke Dashboard Admin (/admin/dashboard)"]
+    C9 -- Siswa --> C11["Redirect ke Dashboard Siswa (/siswa/dashboard)"]
+    C10 --> C_End([Selesai])
+    C11 --> C_End
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- SECTION 5: FLOWCHART SISTEM -->
+        <!-- ======================================================== -->
+        <section id="flowchart-section" class="diagram-card">
+            <div class="diagram-card-header bg-light">
+                <div>
+                    <h5 class="fw-bold mb-1 text-primary">
+                        <i class="fa-solid fa-arrow-trend-up text-danger me-2"></i>5. Flowchart Sistem
+                    </h5>
+                    <small class="text-muted">Bagan alir logika prosedural program, pemrosesan formulir, percabangan keputusan, dan output cetak.</small>
+                </div>
+                <span class="badge bg-danger">Standard Flowchart</span>
+            </div>
+            <div class="diagram-card-body">
+
+                <!-- Flowchart 1: Alur Utama Keseluruhan -->
+                <div id="flowchart-5-1" class="mb-5">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-dark mb-0">Flowchart 5.1: Alur Kerja Sistem Perpustakaan Keseluruhan (Global Flowchart)</h6>
+                        <div class="zoom-toolbar no-print">
+                            <button class="zoom-btn" onclick="zoomIn('flowchart-5-1')"><i class="fa-solid fa-plus"></i></button>
+                            <button class="zoom-btn" onclick="zoomOut('flowchart-5-1')"><i class="fa-solid fa-minus"></i></button>
+                            <button class="zoom-btn" onclick="resetZoom('flowchart-5-1')">100%</button>
+                            <button class="zoom-btn text-primary" onclick="openModal('flowchart-5-1', 'Flowchart 5.1: Alur Kerja Sistem Perpustakaan Keseluruhan')"><i class="fa-solid fa-expand"></i></button>
+                        </div>
+                    </div>
+                    <div class="diagram-viewport-container">
+                        <div class="diagram-viewport">
+                            <div class="mermaid">
+flowchart TD
+    F_Start([Mulai]) --> F_Landing[/"Halaman Login atau Registrasi"/]
+    F_Landing --> F_Decision{"Sudah Memiliki Akun?"}
+    F_Decision -- Belum --> F_Reg[/"Form Registrasi Siswa: NIS, Nama, Kelas"/]
+    F_Reg --> F_SaveReg[("Simpan Akun Baru ke Database")]
+    F_SaveReg --> F_Landing
+    F_Decision -- Sudah --> F_InputLogin[/"Input Username & Password"/]
+    F_InputLogin --> F_AuthCheck{"Kredensial Valid?"}
+    F_AuthCheck -- Tidak --> F_ErrMsg[/"Tampilkan Pesan Error Login"/]
+    F_ErrMsg --> F_InputLogin
+    F_AuthCheck -- Ya --> F_CheckRole{"Pemeriksaan Role Pengguna"}
+
+    %% Admin Branch
+    F_CheckRole -- Administrator --> F_AdminMenu[/"Dashboard Administrator"/]
+    F_AdminMenu --> F_AdminChoices{"Pilihan Menu Admin"}
+    F_AdminChoices -- Master Data --> F_CRUD[("Kelola User, Buku, Kategori, Penerbit, Pengarang")]
+    F_AdminChoices -- Sirkulasi --> F_MonitorTrans[("Monitoring Peminjaman & Pengembalian")]
+    F_AdminChoices -- Laporan --> F_FilterLap[/"Filter Kata Kunci atau Tanggal"/]
+    F_FilterLap --> F_PrintDoc[/"Cetak Laporan Kop Surat Resmi"/]
+    F_AdminChoices -- Pengaturan --> F_Identitas[("Update Profil Sekolah & Maps")]
+
+    %% Siswa Branch
+    F_CheckRole -- Siswa --> F_SiswaMenu[/"Dashboard Siswa"/]
+    F_SiswaMenu --> F_SiswaChoices{"Pilihan Menu Siswa"}
+    F_SiswaChoices -- Pinjam Buku --> F_Peminjaman[/"Pilih Buku & Tanggal Pinjam"/]
+    F_Peminjaman --> F_TriggerCheck{"Stok Tersedia?"}
+    F_TriggerCheck -- Kosong --> F_AlertStok[/"Gagal: Stok Buku Habis"/]
+    F_AlertStok --> F_SiswaMenu
+    F_TriggerCheck -- Ada --> F_SavePinjam[("Trigger Potong Stok & Simpan Transaksi")]
+    F_SavePinjam --> F_SiswaMenu
+    F_SiswaChoices -- Kembali Buku --> F_Pengembalian[/"Input Pengembalian & Kondisi Baik/Rusak/Hilang"/]
+    F_Pengembalian --> F_SaveKembali[("Trigger Mutasi Stok & Hitung Denda/Ganti Rugi")]
+    F_SaveKembali --> F_SiswaMenu
+    F_SiswaChoices -- Katalog OPAC --> F_OPAC[/"Cari Buku Live Search & Stok"/]
+    F_OPAC --> F_SiswaMenu
+
+    %% Logout
+    F_AdminChoices -- Logout --> F_Logout[/"Hapus Sesi & Keluar"/]
+    F_SiswaChoices -- Logout --> F_Logout
+    F_Logout --> F_End([Selesai])
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flowchart 2: Flowchart Filter & Cetak Laporan (SYNTAX FIXED & ENHANCED) -->
+                <div id="flowchart-5-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold text-dark mb-0">Flowchart 5.2: Alur Pemfilteran Data & Cetak Laporan Perpustakaan (Kop Surat)</h6>
+                        <div class="zoom-toolbar no-print">
+                            <button class="zoom-btn" onclick="zoomIn('flowchart-5-2')"><i class="fa-solid fa-plus"></i></button>
+                            <button class="zoom-btn" onclick="zoomOut('flowchart-5-2')"><i class="fa-solid fa-minus"></i></button>
+                            <button class="zoom-btn" onclick="resetZoom('flowchart-5-2')">100%</button>
+                            <button class="zoom-btn text-primary" onclick="openModal('flowchart-5-2', 'Flowchart 5.2: Alur Pemfilteran & Cetak Laporan')"><i class="fa-solid fa-expand"></i></button>
+                        </div>
+                    </div>
+                    <div class="diagram-viewport-container">
+                        <div class="diagram-viewport">
+                            <div class="mermaid">
+flowchart TD
+    FL_Start([Mulai]) --> FL1[/"Admin Masuk Menu Laporan Perpustakaan"/]
+    FL1 --> FL2["Sistem Melakukan Query Database View: v_peminjaman_detail"]
+    FL2 --> FL3[/"Admin Memasukkan Filter: Bulan, Tahun, atau Nama"/]
+    FL3 --> FL4{"Apakah Filter Diisi?"}
+    FL4 -- Ya --> FL5["Query Database dengan Klausul WHERE LIKE %keyword%"]
+    FL4 -- Tidak --> FL6["Query Menampilkan Seluruh Catatan Transaksi"]
+    FL5 --> FL7["Tampilkan Tabel Hasil Filter pada Layar"]
+    FL6 --> FL7
+    FL7 --> FL8{"Klik Tombol Cetak Laporan?"}
+    FL8 -- Batal --> FL1
+    FL8 -- Ya --> FL9["Render Template Cetak: Kop Surat SMPN 1 Kota Gajah"]
+    FL9 --> FL10["Ambil Informasi Kepala Perpustakaan & Titimangsa"]
+    FL10 --> FL11[/"Panggil Dialog Cetak Browser: window.print()"/]
+    FL11 --> FL_End([Selesai / Dokumen Tercetak])
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- SECTION 6: CLASS DIAGRAM (MVC) -->
+        <!-- ======================================================== -->
+        <section id="class-section" class="diagram-card">
+            <div class="diagram-card-header bg-light">
+                <div>
+                    <h5 class="fw-bold mb-1 text-primary">
+                        <i class="fa-solid fa-cubes text-info me-2"></i>6. Class Diagram (Arsitektur MVC)
+                    </h5>
+                    <small class="text-muted">Struktur kelas berorientasi objek (OOP) meliputi Model, Controller, Database Helper, dan View Handlers.</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="zoom-toolbar no-print">
+                        <button class="zoom-btn" onclick="zoomIn('class-section')"><i class="fa-solid fa-plus"></i></button>
+                        <button class="zoom-btn" onclick="zoomOut('class-section')"><i class="fa-solid fa-minus"></i></button>
+                        <button class="zoom-btn" onclick="resetZoom('class-section')">100%</button>
+                        <button class="zoom-btn text-primary" onclick="openModal('class-section', '6. Class Diagram (Arsitektur MVC)')"><i class="fa-solid fa-expand"></i> Layar Penuh</button>
+                    </div>
+                </div>
+            </div>
+            <div class="diagram-card-body">
+                <div class="diagram-viewport-container">
+                    <div class="diagram-viewport">
+                        <div class="mermaid">
+classDiagram
+    class Database {
+        -string host
+        -string user
+        -string pass
+        -string dbname
+        -PDO conn
+        +getConnection() PDO
+    }
+
+    class PerpusModel {
+        -PDO db
+        +getUserByUsername(username)
+        +getUserById(id)
+        +getAllUser(role)
+        +insertUser(data)
+        +updateUser(id, data)
+        +deleteUser(id)
+        +getAllBuku()
+        +getBukuById(id)
+        +insertBuku(data)
+        +updateBuku(id, data)
+        +deleteBuku(id)
+        +resolveCoverUrl(buku, baseUrl)
+        +getAllKategori()
+        +getAllPenerbit()
+        +getAllPengarang()
+        +cleanOrphanPengarang()
+        +cleanOrphanPenerbit()
+        +getAllPeminjaman(filter)
+        +getPeminjamanById(id)
+        +prosesPengembalianAdmin(id, kondisi, dendaTelat, dendaRusak, catatan)
+        +getStatistikDashboard()
+        +getIdentitas()
+    }
+
+    class AuthController {
+        -PerpusModel model
+        +login()
+        +prosesLogin()
+        +register()
+        +prosesRegister()
+        +logout()
+        +diagram()
+    }
+
+    class AdminController {
+        -PerpusModel model
+        +dashboard()
+        +anggota()
+        +buku()
+        +bukuAdd()
+        +bukuEdit()
+        +kategori()
+        +penerbit()
+        +pengarang()
+        +peminjaman()
+        +pengembalian()
+        +riwayat()
+        +laporan()
+        +cetakLaporan(filter)
+        +identitas()
+    }
+
+    class SiswaController {
+        -PerpusModel model
+        +dashboard()
+        +peminjaman()
+        +pengembalian()
+        +riwayat()
+        +profil()
+    }
+
+    class KatalogController {
+        -PerpusModel model
+        +index()
+        +detailJson()
+    }
+
+    %% Relasi Class
+    Database <-- PerpusModel : Menyediakan Koneksi PDO
+    PerpusModel <-- AuthController : Menggunakan Data
+    PerpusModel <-- AdminController : Menggunakan Data
+    PerpusModel <-- SiswaController : Menggunakan Data
+    PerpusModel <-- KatalogController : Menggunakan Data OPAC
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-light rounded-3 border mt-3 small text-muted">
+                    <strong>Pola Desain Model-View-Controller (MVC):</strong> Model <code>PerpusModel</code> mengisolasi seluruh query SQL, Views (AdminLTE 3) bertanggung jawab atas presentasi UI, dan Controller memproses aturan validasi serta navigasi HTTP.
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- SECTION 7: SEQUENCE DIAGRAM -->
+        <!-- ======================================================== -->
+        <section id="sequence-section" class="diagram-card">
+            <div class="diagram-card-header bg-light">
+                <div>
+                    <h5 class="fw-bold mb-1 text-primary">
+                        <i class="fa-solid fa-arrows-split-up-and-left text-warning me-2"></i>7. Sequence Diagram
+                    </h5>
+                    <small class="text-muted">Interaksi sekuensial waktu antara Pengguna, Controller, Model, Database InnoDB, dan Triggers.</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="zoom-toolbar no-print">
+                        <button class="zoom-btn" onclick="zoomIn('sequence-section')"><i class="fa-solid fa-plus"></i></button>
+                        <button class="zoom-btn" onclick="zoomOut('sequence-section')"><i class="fa-solid fa-minus"></i></button>
+                        <button class="zoom-btn" onclick="resetZoom('sequence-section')">100%</button>
+                        <button class="zoom-btn text-primary" onclick="openModal('sequence-section', '7. Sequence Diagram Transaksi')"><i class="fa-solid fa-expand"></i> Layar Penuh</button>
+                    </div>
+                </div>
+            </div>
+            <div class="diagram-card-body">
+                <div class="diagram-viewport-container">
+                    <div class="diagram-viewport">
+                        <div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor Siswa as Siswa (Aktor)
+    participant UI as Browser / View Siswa
+    participant Ctrl as SiswaController
+    participant Model as PerpusModel
+    participant DB as MySQL db_perpustakaan
+    participant Trg as Trigger: trg_pinjam
+
+    Siswa->>UI: Isi Formulir Peminjaman (id_buku, tgl_pinjam)
+    UI->>Ctrl: POST /index.php?act=proses_pinjam
+    Ctrl->>Model: insertPeminjaman(dataArray)
+    Model->>DB: INSERT INTO peminjaman (id_user, id_buku, ...)
+    
+    activate DB
+    DB->>Trg: BEFORE INSERT (Cek Stok Buku)
+    activate Trg
+    Trg->>DB: SELECT j_buku_baik FROM buku WHERE id_buku = ?
+    alt Stok Buku Kosong (Stok <= 0)
+        Trg-->>DB: SIGNAL SQLSTATE 45000 (Stok Kosong)
+        DB-->>Model: Exception / Error Eksekusi SQL
+        Model-->>Ctrl: Return false
+        Ctrl-->>UI: Set Flashdata Error "Stok buku sedang kosong"
+        UI-->>Siswa: Alert Gagal Pinjam
+    else Stok Buku Tersedia (Stok > 0)
+        Trg-->>DB: Stok Valid, Lanjutkan INSERT
+        deactivate Trg
+        DB->>DB: Catat Baris Baru ke Tabel peminjaman
+        DB->>Trg: AFTER INSERT (Kurangi Stok)
+        activate Trg
+        Trg->>DB: UPDATE buku SET j_buku_baik = j_buku_baik - 1
+        deactivate Trg
+        DB-->>Model: Return ID Peminjaman (Success)
+        deactivate DB
+        Model-->>Ctrl: Return true
+        Ctrl-->>UI: Set Flashdata Sukses & Redirect
+        UI-->>Siswa: Tampilkan Notifikasi Berhasil & Update Riwayat
+    end
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- SECTION 8: STATE MACHINE DIAGRAM -->
+        <!-- ======================================================== -->
+        <section id="state-section" class="diagram-card">
+            <div class="diagram-card-header bg-light">
+                <div>
+                    <h5 class="fw-bold mb-1 text-primary">
+                        <i class="fa-solid fa-clock-rotate-left text-success me-2"></i>8. State Machine Diagram (Siklus Status Buku & Transaksi)
+                    </h5>
+                    <small class="text-muted">Perubahan status transaksi peminjaman serta mutasi fisik buku dari kondisi tersedia hingga dikembalikan.</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="zoom-toolbar no-print">
+                        <button class="zoom-btn" onclick="zoomIn('state-section')"><i class="fa-solid fa-plus"></i></button>
+                        <button class="zoom-btn" onclick="zoomOut('state-section')"><i class="fa-solid fa-minus"></i></button>
+                        <button class="zoom-btn" onclick="resetZoom('state-section')">100%</button>
+                        <button class="zoom-btn text-primary" onclick="openModal('state-section', '8. State Machine Diagram')"><i class="fa-solid fa-expand"></i> Layar Penuh</button>
+                    </div>
+                </div>
+            </div>
+            <div class="diagram-card-body">
+                <div class="diagram-viewport-container">
+                    <div class="diagram-viewport">
+                        <div class="mermaid">
+stateDiagram-v2
+    [*] --> Tersedia : Buku Masuk Katalog
+    
+    state "Siklus Transaksi Peminjaman" as Transaksi {
+        [*] --> MenungguKonfirmasi : Siswa Ajukan Pinjam
+        MenungguKonfirmasi --> SedangDipinjam : Konfirmasi Pinjam
+        SedangDipinjam --> VerifikasiPengembalian : Siswa Menyerahkan Buku
+        VerifikasiPengembalian --> DikembalikanBaik : Kondisi Baik
+        VerifikasiPengembalian --> DikembalikanRusak : Kondisi Rusak
+        VerifikasiPengembalian --> DinyatakanHilang : Kondisi Hilang
+        DikembalikanBaik --> Selesai : Denda Terlambat Opsional
+        DikembalikanRusak --> Selesai : Denda Kerusakan
+        DinyatakanHilang --> Selesai : Biaya Penggantian Buku
+        Selesai --> [*]
+    }
+
+    Tersedia --> SedangDipinjam : Dipinjam Siswa
+    SedangDipinjam --> Tersedia : Dikembalikan Baik
+    SedangDipinjam --> DalamPerbaikan : Dikembalikan Rusak
+    DalamPerbaikan --> Tersedia : Restorasi Selesai
+    SedangDipinjam --> InventarisHilang : Dinyatakan Hilang
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- SECTION 9: DFD (DATA FLOW DIAGRAM) LEVEL 0 & 1 -->
+        <!-- ======================================================== -->
+        <section id="dfd-section" class="diagram-card">
+            <div class="diagram-card-header bg-light">
+                <div>
+                    <h5 class="fw-bold mb-1 text-primary">
+                        <i class="fa-solid fa-arrows-spin text-info me-2"></i>9. Data Flow Diagram (DFD) Level 0 & Level 1
+                    </h5>
+                    <small class="text-muted">Aliran informasi dan transformasi data antar entitas eksternal, proses, dan data store.</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="zoom-toolbar no-print">
+                        <button class="zoom-btn" onclick="zoomIn('dfd-section')"><i class="fa-solid fa-plus"></i></button>
+                        <button class="zoom-btn" onclick="zoomOut('dfd-section')"><i class="fa-solid fa-minus"></i></button>
+                        <button class="zoom-btn" onclick="resetZoom('dfd-section')">100%</button>
+                        <button class="zoom-btn text-primary" onclick="openModal('dfd-section', '9. Data Flow Diagram (DFD)')"><i class="fa-solid fa-expand"></i> Layar Penuh</button>
+                    </div>
+                </div>
+            </div>
+            <div class="diagram-card-body">
+
+                <!-- DFD Level 0 -->
+                <div class="mb-5">
+                    <h6 class="fw-bold text-dark mb-3">DFD Level 0 (Context Diagram)</h6>
+                    <div class="diagram-viewport-container">
+                        <div class="diagram-viewport">
+                            <div class="mermaid">
+flowchart LR
+    E_Siswa["fa:fa-user-graduate Siswa / Anggota"]
+    P_System(("0.0 Sistem Informasi Perpustakaan SMPN 1 Kota Gajah"))
+    E_Admin["fa:fa-user-shield Petugas / Admin"]
+    E_Kepsek["fa:fa-user-tie Kepala Sekolah"]
+
+    E_Siswa -->|1. Registrasi, Pinjam, Kembali, OPAC| P_System
+    P_System -->|2. Bukti Pinjam, Riwayat, Denda| E_Siswa
+
+    E_Admin -->|3. Master Data Buku, Kategori, Pengarang, Penerbit| P_System
+    P_System -->|4. Rekap Statistik, AI Insight & Sirkulasi| E_Admin
+
+    P_System -->|5. Laporan Cetak Resmi Kop Surat| E_Kepsek
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DFD Level 1 -->
+                <div>
+                    <h6 class="fw-bold text-dark mb-3">DFD Level 1 (Dekomposisi Fungsional Utama)</h6>
+                    <div class="diagram-viewport-container">
+                        <div class="diagram-viewport">
+                            <div class="mermaid">
+flowchart TD
+    Ext_User([Siswa / Petugas / Publik])
+
+    %% Proses
+    P1((1.0 Proses Autentikasi))
+    P2((2.0 Pengelolaan Master Data))
+    P3((3.0 Sirkulasi Peminjaman))
+    P4((4.0 Sirkulasi Pengembalian))
+    P5((5.0 Pembuatan Laporan))
+    P6((6.0 Pencarian Katalog OPAC))
+
+    %% Data Stores
+    D1[(D1: Tabel user)]
+    D2[(D2: Tabel buku & kategori)]
+    D3[(D3: Tabel peminjaman)]
+    D4[(D4: Tabel identitas)]
+    D5[(D5: Tabel pengarang & penerbit)]
+
+    Ext_User -->|Kredensial Login| P1
+    P1 <-->|Validasi Akun & Role| D1
+
+    Ext_User -->|CRUD Buku, Anggota, Pengarang| P2
+    P2 -->|Simpan/Hapus Buku & Kategori| D2
+    P2 -->|Kelola Akun Pengguna| D1
+    P2 -->|Kelola Pengarang & Penerbit| D5
+
+    Ext_User -->|Pilih Buku Pinjam| P3
+    P3 <-->|Cek Stok Baik via Trigger| D2
+    P3 -->|Catat Transaksi Peminjaman| D3
+
+    Ext_User -->|Input Kembali: Baik/Rusak/Hilang| P4
+    P4 -->|Update Status Selesai & Denda/Ganti| D3
+    P4 -->|Update Mutasi Stok Fisik| D2
+
+    Ext_User -->|Live Search Judul, Pengarang, ISBN| P6
+    P6 <-->|Ambil Koleksi, Sampul, Stok & Harga| D2
+    P6 <-->|Ambil Detail Pengarang| D5
+
+    D3 -->|Ambil Data Transaksi| P5
+    D4 -->|Ambil Profil Sekolah & Kontak| P5
+    P5 -->|Dokumen Laporan Tercetak| Ext_User
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- SECTION 10: DEPLOYMENT & ARSITEKTUR FISIK -->
+        <!-- ======================================================== -->
+        <section id="deployment-section" class="diagram-card">
+            <div class="diagram-card-header bg-light">
+                <div>
+                    <h5 class="fw-bold mb-1 text-primary">
+                        <i class="fa-solid fa-server text-primary me-2"></i>10. Deployment & Architecture Diagram
+                    </h5>
+                    <small class="text-muted">Topologi arsitektur sistem berbasis Web 3-Tier (Client Tier, Application Server Tier, Database Tier).</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="zoom-toolbar no-print">
+                        <button class="zoom-btn" onclick="zoomIn('deployment-section')"><i class="fa-solid fa-plus"></i></button>
+                        <button class="zoom-btn" onclick="zoomOut('deployment-section')"><i class="fa-solid fa-minus"></i></button>
+                        <button class="zoom-btn" onclick="resetZoom('deployment-section')">100%</button>
+                        <button class="zoom-btn text-primary" onclick="openModal('deployment-section', '10. Deployment & Architecture Diagram')"><i class="fa-solid fa-expand"></i> Layar Penuh</button>
+                    </div>
+                </div>
+            </div>
+            <div class="diagram-card-body">
+                <div class="diagram-viewport-container">
+                    <div class="diagram-viewport">
+                        <div class="mermaid">
+flowchart TB
+    subgraph ClientTier [" Client Tier (End-Users) "]
+        Client1[Peramban Web Siswa<br>Chrome / Edge / Firefox]
+        Client2[Peramban Web Petugas<br>PC Desktop Perpustakaan]
+    end
+
+    subgraph AppTier [" Web & Application Server Tier (Localhost / XAMPP) "]
+        Apache[Apache HTTP Server 2.4<br>Port: 80 / 8080]
+        PHP_Engine[PHP 7.4 - 8.2 Engine<br>Native OOP MVC Framework]
+        Router[Front Controller: index.php]
+        Views[AdminLTE 3 UI Templates]
+        
+        Apache --> Router
+        Router --> PHP_Engine
+        PHP_Engine --> Views
+    end
+
+    subgraph DBTier [" Database Tier (Advanced RDBMS) "]
+        MySQL[MySQL / MariaDB Engine<br>Database: db_perpustakaan]
+        InnoDB[InnoDB Storage Engine<br>ACID Compliant & Foreign Keys]
+        Triggers[4 Active Database Triggers]
+        ViewsDB[Database Views:<br>v_buku_detail & v_peminjaman_detail]
+
+        MySQL --> InnoDB
+        InnoDB --> Triggers
+        InnoDB --> ViewsDB
+    end
+
+    Client1 -->|HTTP / HTTPS Request| Apache
+    Client2 -->|HTTP / HTTPS Request| Apache
+    PHP_Engine -->|PDO MySQL Connection| MySQL
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 row g-3 text-center">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <i class="fa-solid fa-desktop fs-2 text-primary mb-2"></i>
+                            <h6 class="fw-bold">1. Client Tier</h6>
+                            <p class="small text-muted mb-0">Responsif pada perangkat PC, tablet, maupun ponsel pintar menggunakan Bootstrap 4/AdminLTE.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <i class="fa-brands fa-php fs-2 text-primary mb-2"></i>
+                            <h6 class="fw-bold">2. Application Server Tier</h6>
+                            <p class="small text-muted mb-0">Arsitektur MVC native modular, pemisahan rute request, session authentication, dan view rendering.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <i class="fa-solid fa-database fs-2 text-primary mb-2"></i>
+                            <h6 class="fw-bold">3. Database Tier</h6>
+                            <p class="small text-muted mb-0">Mesin MariaDB/MySQL dengan relasi 3NF, Foreign Key cascading, indeks query, dan trigger otomatis.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer Info -->
+        <footer class="mt-5 text-center text-muted small py-4 border-top">
+            <div class="fw-semibold text-dark">Sistem Informasi Perpustakaan SMP Negeri 1 Kota Gajah</div>
+            <div>Dokumentasi Pemodelan Sistem & Basis Data Tingkat Lanjut (Advanced Database)</div>
+            <div class="text-secondary mt-1">Re-create & Modernisasi Skripsi S1 Ilmu Komputer | Sidik Prastio Utomo (19430028)</div>
+        </footer>
+
+    </main>
+
+    <!-- Modal Pop-up Layar Penuh -->
+    <div class="modal fade" id="modalDiagram" tabindex="-1" aria-labelledby="modalDiagramTitle" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white py-2">
+                    <h5 class="modal-title fs-6 fw-bold" id="modalDiagramTitle"><i class="fa-solid fa-diagram-project me-2 text-warning"></i>Pratinjau Diagram</h5>
+                    <div class="d-flex align-items-center gap-2 ms-auto me-3">
+                        <button class="btn btn-sm btn-outline-light" onclick="modalZoom(0.2)"><i class="fa-solid fa-plus"></i> Perbesar</button>
+                        <button class="btn btn-sm btn-outline-light" onclick="modalZoom(-0.2)"><i class="fa-solid fa-minus"></i> Perkecil</button>
+                        <button class="btn btn-sm btn-outline-light" onclick="modalReset()"><i class="fa-solid fa-rotate-right"></i> Reset</button>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0 d-flex justify-content-center align-items-center bg-light">
+                    <div id="modalDiagramContent" class="w-100 h-100 p-4"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Interactive Zoom, Drag & Modal Scripts -->
+    <script>
+        const zoomLevels = {};
+        let currentModalZoom = 1.0;
+
+        function getTargetElement(containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return null;
+            return container.querySelector('.mermaid');
+        }
+
+        function zoomIn(containerId) {
+            zoomLevels[containerId] = (zoomLevels[containerId] || 1.0) + 0.15;
+            applyZoom(containerId);
+        }
+
+        function zoomOut(containerId) {
+            zoomLevels[containerId] = Math.max(0.5, (zoomLevels[containerId] || 1.0) - 0.15);
+            applyZoom(containerId);
+        }
+
+        function resetZoom(containerId) {
+            zoomLevels[containerId] = 1.0;
+            applyZoom(containerId);
+        }
+
+        function applyZoom(containerId) {
+            const el = getTargetElement(containerId);
+            if (el) {
+                const scale = zoomLevels[containerId] || 1.0;
+                el.style.transform = `scale(${scale})`;
+            }
+        }
+
+        function openModal(containerId, title) {
+            const el = getTargetElement(containerId);
+            if (!el) return;
+
+            const modalContent = document.getElementById('modalDiagramContent');
+            const modalTitle = document.getElementById('modalDiagramTitle');
+            
+            modalTitle.innerHTML = `<i class="fa-solid fa-diagram-project me-2 text-warning"></i>${title}`;
+            modalContent.innerHTML = el.innerHTML;
+            
+            currentModalZoom = 1.0;
+            const svg = modalContent.querySelector('svg');
+            if (svg) {
+                svg.style.transformOrigin = 'top center';
+                svg.style.transition = 'transform 0.2s ease';
+                svg.style.transform = `scale(${currentModalZoom})`;
+                svg.style.minWidth = '1000px';
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('modalDiagram'));
+            modal.show();
+        }
+
+        function modalZoom(delta) {
+            const modalContent = document.getElementById('modalDiagramContent');
+            const svg = modalContent.querySelector('svg');
+            if (svg) {
+                currentModalZoom = Math.max(0.4, currentModalZoom + delta);
+                svg.style.transform = `scale(${currentModalZoom})`;
+            }
+        }
+
+        function modalReset() {
+            const modalContent = document.getElementById('modalDiagramContent');
+            const svg = modalContent.querySelector('svg');
+            if (svg) {
+                currentModalZoom = 1.0;
+                svg.style.transform = `scale(1.0)`;
+            }
+        }
+
+        // Active Navigation Highlighter Script
+        document.addEventListener('DOMContentLoaded', function () {
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('#sidebar .nav-link');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop - 120;
+                    if (window.pageYOffset >= sectionTop) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
