@@ -1,7 +1,7 @@
 FROM php:8.3-apache
 
-# Install ekstensi PDO MySQL untuk koneksi database cloud (TiDB / Aiven)
-RUN docker-php-ext-install pdo pdo_mysql
+# Install ca-certificates untuk SSL/TLS koneksi cloud & ekstensi PDO MySQL
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates && docker-php-ext-install pdo pdo_mysql
 
 # Aktifkan mod_rewrite Apache untuk URL routing index.php
 RUN a2enmod rewrite

@@ -21,6 +21,14 @@ try {
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ];
     if (!empty($config['ssl'])) {
+        $caFile = '/etc/ssl/certs/ca-certificates.crt';
+        if (file_exists($caFile)) {
+            $options[PDO::MYSQL_ATTR_SSL_CA] = $caFile;
+        } elseif (file_exists('/etc/pki/tls/certs/ca-bundle.crt')) {
+            $options[PDO::MYSQL_ATTR_SSL_CA] = '/etc/pki/tls/certs/ca-bundle.crt';
+        } else {
+            $options[PDO::MYSQL_ATTR_SSL_CA] = true;
+        }
         $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
     }
     $pdo = new PDO("mysql:host={$host};port={$port}", $user, $pass, $options);
