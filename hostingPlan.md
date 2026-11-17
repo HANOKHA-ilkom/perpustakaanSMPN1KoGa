@@ -38,22 +38,13 @@ Karena Vercel adalah platform *Serverless* yang tidak memiliki layanan database 
 
 ## 3. Penyesuaian Berkas Proyek (Technical Adjustments)
 
-### A. Berkas `vercel.json` (Wajib Dibuat di Root)
-Menginstruksikan Vercel agar menjalankan kode PHP melalui runtime serverless dan merutekan semua URL ke `index.php`.
+### A. Berkas `vercel.json` & `Dockerfile` (Container Deployment)
+Menginstruksikan Vercel agar menjalankan aplikasi secara andal menggunakan runtime Container resmi Vercel (PHP 8.3 Apache):
 
 ```json
 {
-  "functions": {
-    "api/*.php": {
-      "runtime": "vercel-php@0.9.0"
-    }
-  },
-  "routes": [
-    { "src": "/assets/(.*)", "dest": "/assets/$1" },
-    { "src": "/cover_buku/(.*)", "dest": "/cover_buku/$1" },
-    { "src": "/diagram_perpustakaan.html", "dest": "/diagram_perpustakaan.html" },
-    { "src": "/(.*)", "dest": "/api/index.php" }
-  ]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "container"
 }
 ```
 

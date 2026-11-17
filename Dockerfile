@@ -6,7 +6,7 @@ RUN docker-php-ext-install pdo pdo_mysql
 # Aktifkan mod_rewrite Apache untuk URL routing index.php
 RUN a2enmod rewrite
 
-# Izinkan .htaccess mengatur konfigurasi direktori (ganti AllowOverride None -> All)
+# Izinkan .htaccess mengatur konfigurasi direktori
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
 # Pastikan DirectoryIndex mengenali index.php sebagai halaman utama

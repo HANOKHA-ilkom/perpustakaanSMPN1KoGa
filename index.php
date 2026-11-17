@@ -7,9 +7,9 @@
 error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
 ini_set('display_errors', '1');
 
-// Pastikan session path aman di lingkungan container/serverless (/tmp)
+// Pastikan session path aman di serverless / read-only filesystem (/tmp)
 if (session_status() === PHP_SESSION_NONE) {
-    if (!is_writable(session_save_path())) {
+    if (function_exists('session_save_path') && (!is_dir(session_save_path()) || !is_writable(session_save_path()))) {
         @session_save_path('/tmp');
     }
     @session_start();
