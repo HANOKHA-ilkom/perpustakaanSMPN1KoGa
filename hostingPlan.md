@@ -44,8 +44,8 @@ Menginstruksikan Vercel agar menjalankan kode PHP melalui runtime serverless dan
 ```json
 {
   "functions": {
-    "api/index.php": {
-      "runtime": "vercel-php@0.7.3"
+    "api/*.php": {
+      "runtime": "vercel-php@0.9.0"
     }
   },
   "routes": [
@@ -155,7 +155,7 @@ return [
 5. **Eksekusi Deployment:**
    - Klik tombol biru **"Deploy"** di bagian bawah.
    - Anda akan dialihkan ke layar proses *Building*. Vercel akan otomatis:
-     - Mengunduh dependensi runtime serverless `vercel-php@0.7.3`.
+     - Mengunduh dependensi runtime serverless `vercel-php@0.9.0`.
      - Mengompilasi rute `vercel.json` dan menghubungkan jembatan `api/index.php`.
    - Tunggu sekitar 1–2 menit sampai muncul pesan animasi perayaan (*Congratulations!*).
 
