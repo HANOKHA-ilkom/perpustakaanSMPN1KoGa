@@ -17,6 +17,147 @@ class PerpusModel {
     private function checkAndMigrateColumns(): void {
         try {
             if ($this->db) {
+                // 1. Pastikan tabel user ada
+                $chkUser = $this->db->query("SHOW TABLES LIKE 'user'");
+                if (!$chkUser->fetch()) {
+                    $this->db->exec("CREATE TABLE IF NOT EXISTS `user` (
+                      `id_user` int(11) NOT NULL AUTO_INCREMENT,
+                      `kode_user` varchar(25) NOT NULL,
+                      `nis` char(25) NOT NULL DEFAULT '-',
+                      `fullname` varchar(125) NOT NULL,
+                      `username` varchar(50) NOT NULL,
+                      `password` varchar(50) NOT NULL,
+                      `kelas` varchar(50) NOT NULL DEFAULT '-',
+                      `alamat` varchar(225) NOT NULL DEFAULT '-',
+                      `no_whatsapp` varchar(25) NOT NULL DEFAULT '087767499895',
+                      `verif` varchar(50) NOT NULL DEFAULT 'Akun Terverifikasi',
+                      `role` varchar(50) NOT NULL DEFAULT 'Siswa',
+                      `jam_aktif` varchar(100) NOT NULL DEFAULT '07:30 - 15:30 WIB',
+                      `join_date` varchar(125) NOT NULL,
+                      `terakhir_login` varchar(125) NOT NULL DEFAULT '-',
+                      PRIMARY KEY (`id_user`),
+                      INDEX `idx_user_role` (`role`),
+                      INDEX `idx_user_username` (`username`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $this->db->exec("INSERT INTO `user` (`id_user`, `kode_user`, `nis`, `fullname`, `username`, `password`, `kelas`, `alamat`, `no_whatsapp`, `verif`, `role`, `jam_aktif`, `join_date`, `terakhir_login`) VALUES
+                    (1, 'ADM001', '-', 'Administrator Utama', 'admin', 'admin', '-', 'SMP Negeri 1 Kota Gajah', '082385495700', 'Akun Terverifikasi', 'Administrator', '07:00 - 16:00 WIB', '2023-08-01', '26-08-2023 ( 10:09:39 )'),
+                    (2, 'AP001', '1230064', 'Sidik Prastio Utomo', 'sidik', 'sidik', 'IX-A', 'Sumbersari Bantul, Kec. Metro Barat', '087767499895', 'Akun Terverifikasi', 'Siswa', '07:30 - 15:30 WIB', '2023-08-01', '26-08-2023 ( 11:15:20 )'),
+                    (3, 'AP002', '1230065', 'Anisa Rahmawati', 'anisa', 'anisa', 'VIII-B', 'Jl. Merdeka No. 12, Sritejokencono, Kota Gajah', '087767499895', 'Akun Terverifikasi', 'Siswa', '07:30 - 15:30 WIB', '2023-08-05', '01-11-2023 ( 09:20:15 )'),
+                    (4, 'AP003', '1230066', 'Bayu Pratama', 'bayu', 'bayu', 'VII-A', 'Desa Kotagajah Timur, Lampung Tengah', '087767499895', 'Akun Terverifikasi', 'Siswa', '07:30 - 15:30 WIB', '2023-08-10', '02-11-2023 ( 14:05:42 )'),
+                    (5, 'AP004', '1230067', 'Dewi Lestari', 'dewi', 'dewi', 'IX-C', 'Kecamatan Seputih Raman, Lampung Tengah', '087767499895', 'Akun Terverifikasi', 'Siswa', '07:30 - 15:30 WIB', '2023-08-12', '03-11-2023 ( 08:40:11 )'),
+                    (6, 'AP005', '1230068', 'Fajar Nugraha', 'fajar', 'fajar', 'VIII-A', 'Kecamatan Punggur, Lampung Tengah', '087767499895', 'Akun Terverifikasi', 'Siswa', '07:30 - 15:30 WIB', '2023-08-15', '03-11-2023 ( 13:12:00 )'),
+                    (7, 'ADM002', '-', 'Ratna Sari Dewi, S.Pd.', 'ratna', 'ratna', '-', 'Jl. Mansyur No. 05 Kota Gajah', '082385495700', 'Akun Terverifikasi', 'Administrator', '07:00 - 16:00 WIB', '2023-08-01', '03-11-2023 ( 07:55:10 )');");
+                }
+
+                // 2. Pastikan tabel penerbit ada
+                $chkPenerbit = $this->db->query("SHOW TABLES LIKE 'penerbit'");
+                if (!$chkPenerbit->fetch()) {
+                    $this->db->exec("CREATE TABLE IF NOT EXISTS `penerbit` (
+                      `id_penerbit` int(11) NOT NULL AUTO_INCREMENT,
+                      `kode_penerbit` varchar(125) NOT NULL,
+                      `nama_penerbit` varchar(125) NOT NULL,
+                      `verif_penerbit` varchar(25) NOT NULL DEFAULT 'Penerbit Terverifikasi',
+                      PRIMARY KEY (`id_penerbit`),
+                      INDEX `idx_kode_penerbit` (`kode_penerbit`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $this->db->exec("INSERT INTO `penerbit` (`id_penerbit`, `kode_penerbit`, `nama_penerbit`, `verif_penerbit`) VALUES
+                    (1, 'P001', 'Gramedia Pustaka Utama', 'Penerbit Terverifikasi'),
+                    (2, 'P002', 'Mizan Pustaka', 'Penerbit Terverifikasi'),
+                    (3, 'P003', 'Bentang Pustaka', 'Penerbit Terverifikasi'),
+                    (4, 'P004', 'Erlangga', 'Penerbit Terverifikasi'),
+                    (5, 'P005', 'Republika', 'Penerbit Terverifikasi');");
+                }
+
+                // 3. Pastikan tabel kategori ada
+                $chkKategori = $this->db->query("SHOW TABLES LIKE 'kategori'");
+                if (!$chkKategori->fetch()) {
+                    $this->db->exec("CREATE TABLE IF NOT EXISTS `kategori` (
+                      `id_kategori` int(11) NOT NULL AUTO_INCREMENT,
+                      `kode_kategori` varchar(50) NOT NULL,
+                      `nama_kategori` varchar(125) NOT NULL,
+                      PRIMARY KEY (`id_kategori`),
+                      INDEX `idx_kode_kategori` (`kode_kategori`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $this->db->exec("INSERT INTO `kategori` (`id_kategori`, `kode_kategori`, `nama_kategori`) VALUES
+                    (1, 'K001', 'Novel'),
+                    (2, 'K002', 'Cergam'),
+                    (3, 'K003', 'Ensiklopedi'),
+                    (4, 'K004', 'Biografi'),
+                    (5, 'K005', 'Catatan Harian'),
+                    (6, 'K006', 'Karya Ilmiah'),
+                    (7, 'K007', 'Tafsir'),
+                    (8, 'K008', 'Panduan (how to)'),
+                    (9, 'K009', 'Majalah');");
+                }
+
+                // 4. Pastikan tabel peminjaman ada
+                $chkPinjam = $this->db->query("SHOW TABLES LIKE 'peminjaman'");
+                if (!$chkPinjam->fetch()) {
+                    $this->db->exec("CREATE TABLE IF NOT EXISTS `peminjaman` (
+                      `id_peminjaman` int(11) NOT NULL AUTO_INCREMENT,
+                      `id_user` int(11) NOT NULL,
+                      `id_admin` int(11) NULL DEFAULT 1,
+                      `id_buku` int(11) NOT NULL,
+                      `nama_anggota` varchar(125) NOT NULL DEFAULT '',
+                      `judul_buku` varchar(125) NOT NULL DEFAULT '',
+                      `tanggal_peminjaman` varchar(100) NOT NULL,
+                      `tanggal_pengembalian` varchar(50) NOT NULL DEFAULT '',
+                      `status_transaksi` varchar(50) NOT NULL DEFAULT 'Sedang Dipinjam',
+                      `kondisi_buku_saat_dipinjam` varchar(125) NOT NULL DEFAULT 'Baik',
+                      `kondisi_buku_saat_dikembalikan` varchar(125) NOT NULL DEFAULT '',
+                      `denda` varchar(125) NOT NULL DEFAULT 'Tidak ada',
+                      PRIMARY KEY (`id_peminjaman`),
+                      INDEX `idx_pinjam_user` (`id_user`),
+                      INDEX `idx_pinjam_admin` (`id_admin`),
+                      INDEX `idx_pinjam_buku` (`id_buku`),
+                      INDEX `idx_pinjam_status` (`status_transaksi`),
+                      INDEX `idx_pinjam_tanggal` (`tanggal_peminjaman`, `tanggal_pengembalian`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $this->db->exec("INSERT INTO `peminjaman` (`id_peminjaman`, `id_user`, `id_admin`, `id_buku`, `nama_anggota`, `judul_buku`, `tanggal_peminjaman`, `tanggal_pengembalian`, `status_transaksi`, `kondisi_buku_saat_dipinjam`, `kondisi_buku_saat_dikembalikan`, `denda`) VALUES
+                    (1, 2, 1, 1, 'sidik', 'Cantik Itu Luka', '10-01-2023', '17-01-2023', 'Selesai', 'Baik', 'Baik', 'Tidak ada'),
+                    (2, 3, 7, 4, 'anisa', 'Laskar Pelangi', '14-02-2023', '21-02-2023', 'Selesai', 'Baik', 'Baik', 'Tidak ada'),
+                    (3, 4, 1, 6, 'bayu', 'Ensiklopedia Sains & Teknologi Populer', '05-03-2023', '15-03-2023', 'Selesai', 'Baik', 'Baik', 'Rp 15.000 (Terlambat 3 Hari)'),
+                    (4, 5, 7, 2, 'dewi', 'Home Sweet Loan', '12-04-2023', '19-04-2023', 'Selesai', 'Baik', 'Baik', 'Tidak ada'),
+                    (5, 6, 1, 9, 'fajar', 'Komik Edukasi Si Kancil Modern', '02-05-2023', '09-05-2023', 'Selesai', 'Baik', 'Baik', 'Tidak ada'),
+                    (6, 3, 7, 8, 'anisa', 'Panduan Sukses Ujian Matematika SMP', '18-05-2023', '25-05-2023', 'Selesai', 'Baik', 'Baik', 'Tidak ada'),
+                    (7, 4, 1, 7, 'bayu', 'Biografi B.J. Habibie: Guru Bangsa', '10-06-2023', '17-06-2023', 'Selesai', 'Baik', 'Baik', 'Tidak ada'),
+                    (8, 2, 7, 5, 'sidik', 'Bumi Manusia', '04-07-2023', '11-07-2023', 'Selesai', 'Baik', 'Baik', 'Tidak ada'),
+                    (9, 5, 1, 3, 'dewi', 'Heartbreak Motel', '20-07-2023', '27-07-2023', 'Selesai', 'Baik', 'Baik', 'Tidak ada'),
+                    (10, 2, 7, 1, 'sidik', 'Cantik Itu Luka', '01-08-2023', '08-08-2023', 'Selesai', 'Baik', 'Baik', 'Tidak ada'),
+                    (11, 3, 1, 7, 'anisa', 'Biografi B.J. Habibie: Guru Bangsa', '20-08-2023', '29-08-2023', 'Selesai', 'Baik', 'Rusak', 'Rp 20.000 (Kerusakan Halaman)'),
+                    (12, 4, 7, 6, 'bayu', 'Ensiklopedia Sains & Teknologi Populer', '22-08-2023', '31-08-2023', 'Selesai', 'Baik', 'Baik', 'Rp 5.000 (Terlambat 2 Hari)'),
+                    (13, 5, 1, 2, 'dewi', 'Home Sweet Loan', '05-09-2023', '12-09-2023', 'Selesai', 'Baik', 'Baik', 'Tidak ada'),
+                    (14, 6, 7, 9, 'fajar', 'Komik Edukasi Si Kancil Modern', '18-09-2023', '25-09-2023', 'Selesai', 'Baik', 'Baik', 'Tidak ada'),
+                    (15, 3, 1, 5, 'anisa', 'Bumi Manusia', '08-10-2023', '22-10-2023', 'Selesai', 'Baik', 'Hilang', 'Rp 50.000 (Penggantian Buku Hilang)'),
+                    (16, 4, 7, 8, 'bayu', 'Panduan Sukses Ujian Matematika SMP', '05-11-2023', '12-11-2023', 'Selesai', 'Baik', 'Baik', 'Tidak ada'),
+                    (17, 2, 1, 4, 'sidik', 'Laskar Pelangi', '15-11-2023', '', 'Sedang Dipinjam', 'Baik', '', ''),
+                    (18, 5, 7, 5, 'dewi', 'Bumi Manusia', '02-12-2023', '', 'Sedang Dipinjam', 'Baik', '', ''),
+                    (19, 4, 1, 1, 'bayu', 'Cantik Itu Luka', '10-12-2023', '', 'Sedang Dipinjam', 'Baik', '', ''),
+                    (20, 6, 7, 8, 'fajar', 'Panduan Sukses Ujian Matematika SMP', '15-12-2023', '', 'Sedang Dipinjam', 'Baik', '', '');");
+                }
+
+                // 5. Pastikan tabel identitas ada
+                $chkIdentitas = $this->db->query("SHOW TABLES LIKE 'identitas'");
+                if (!$chkIdentitas->fetch()) {
+                    $this->db->exec("CREATE TABLE IF NOT EXISTS `identitas` (
+                      `id_identitas` int(11) NOT NULL AUTO_INCREMENT,
+                      `nama_app` varchar(50) NOT NULL,
+                      `alamat_app` text NOT NULL,
+                      `email_app` varchar(125) NOT NULL,
+                      `nomor_hp` char(50) NOT NULL,
+                      `latitude` varchar(50) DEFAULT '-4.9754',
+                      `longitude` varchar(50) DEFAULT '105.3188',
+                      PRIMARY KEY (`id_identitas`)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;");
+
+                    $this->db->exec("INSERT INTO `identitas` (`id_identitas`, `nama_app`, `alamat_app`, `email_app`, `nomor_hp`, `latitude`, `longitude`) VALUES
+                    (1, 'Perpustakaan SMP Negeri 1 Kota Gajah', 'Jl. Mansyur No.02, Sritejokencono, Kec. Kota Gajah, Kab. Lampung Tengah Prov. Lampung', 'smpn1kotagajah@gmail.com', '082385495700', '-4.9754', '105.3188');");
+                }
+
                 // Migrasi status_transaksi pada peminjaman jika belum ada
                 $stmt = $this->db->query("SHOW COLUMNS FROM `peminjaman` LIKE 'status_transaksi'");
                 if (!$stmt->fetch()) {
@@ -910,8 +1051,19 @@ class PerpusModel {
                     (SELECT COUNT(*) FROM `peminjaman` p JOIN `buku` b ON p.id_buku = b.id_buku WHERE b.id_kategori = k.id_kategori) AS total_riwayat_pinjam
                 FROM `kategori` k 
                 ORDER BY k.`id_kategori` ASC";
-        $stmt = $this->db->query($sql);
-        return $stmt->fetchAll();
+        try {
+            $stmt = $this->db->query($sql);
+            return $stmt ? $stmt->fetchAll() : [];
+        } catch (PDOException $e) {
+            // Fallback jika peminjaman sedang dalam migrasi
+            try {
+                $basicSql = "SELECT b.*, (b.j_buku_baik + b.j_buku_rusak + COALESCE(b.j_buku_hilang, 0)) AS total_buku FROM `buku` b ORDER BY b.id_buku ASC";
+                $stmt = $this->db->query($basicSql);
+                return $stmt ? $stmt->fetchAll() : [];
+            } catch (PDOException $ex) {
+                return [];
+            }
+        }
     }
 
     public function getBukuByKategoriId(int $idKategori): array {
@@ -1077,8 +1229,19 @@ class PerpusModel {
                 LEFT JOIN `penerbit` p ON b.id_penerbit = p.id_penerbit
                 LEFT JOIN `pengarang` pg ON b.id_pengarang = pg.id_pengarang
                 ORDER BY b.id_buku ASC";
-        $stmt = $this->db->query($sql);
-        return $stmt->fetchAll();
+        try {
+            $stmt = $this->db->query($sql);
+            return $stmt ? $stmt->fetchAll() : [];
+        } catch (PDOException $e) {
+            // Fallback jika peminjaman sedang dalam migrasi
+            try {
+                $basicSql = "SELECT b.*, (b.j_buku_baik + b.j_buku_rusak + COALESCE(b.j_buku_hilang, 0)) AS total_buku FROM `buku` b ORDER BY b.id_buku ASC";
+                $stmt = $this->db->query($basicSql);
+                return $stmt ? $stmt->fetchAll() : [];
+            } catch (PDOException $ex) {
+                return [];
+            }
+        }
     }
 
     public function getBukuById(int $id): ?array {
@@ -1351,8 +1514,19 @@ class PerpusModel {
                 LEFT JOIN `user` u ON p.id_user = u.id_user
                 LEFT JOIN `buku` b ON p.id_buku = b.id_buku
                 ORDER BY p.id_peminjaman DESC";
-        $stmt = $this->db->query($sql);
-        return $stmt->fetchAll();
+        try {
+            $stmt = $this->db->query($sql);
+            return $stmt ? $stmt->fetchAll() : [];
+        } catch (PDOException $e) {
+            // Fallback jika peminjaman sedang dalam migrasi
+            try {
+                $basicSql = "SELECT b.*, (b.j_buku_baik + b.j_buku_rusak + COALESCE(b.j_buku_hilang, 0)) AS total_buku FROM `buku` b ORDER BY b.id_buku ASC";
+                $stmt = $this->db->query($basicSql);
+                return $stmt ? $stmt->fetchAll() : [];
+            } catch (PDOException $ex) {
+                return [];
+            }
+        }
     }
 
     public function getPeminjamanById(int $id): ?array {
