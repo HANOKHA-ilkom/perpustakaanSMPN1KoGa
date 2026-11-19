@@ -236,6 +236,11 @@ class PerpusModel {
                     }
                 }
 
+                // Coba pastikan id_buku AUTO_INCREMENT jika didukung oleh engine database
+                try {
+                    $this->db->exec("ALTER TABLE `buku` MODIFY COLUMN `id_buku` INT(11) NOT NULL AUTO_INCREMENT");
+                } catch (\Throwable $e) {}
+
                 // Migrasi no_whatsapp pada user jika belum ada
                 $stmtWa = $this->db->query("SHOW COLUMNS FROM `user` LIKE 'no_whatsapp'");
                 if (!$stmtWa->fetch()) {
@@ -314,6 +319,16 @@ class PerpusModel {
         return $this->lastError;
     }
 
+    public function getNextId(string $table, string $primaryKey): int {
+        if (!$this->db) return 1;
+        try {
+            $val = $this->db->query("SELECT COALESCE(MAX(`{$primaryKey}`), 0) + 1 FROM `{$table}`")->fetchColumn();
+            return (int)$val ?: 1;
+        } catch (\Throwable $e) {
+            return 1;
+        }
+    }
+
     // ==========================================
     // USER TABLE METHODS
     // ==========================================
@@ -352,11 +367,13 @@ class PerpusModel {
                 $hasJamAktif = (bool)$chk->fetch();
             }
 
+            $nextIdUser = $this->getNextId('user', 'id_user');
             if ($hasJamAktif) {
                 $stmt = $this->db->prepare("INSERT INTO `user` 
-                    (`kode_user`, `nis`, `fullname`, `username`, `password`, `kelas`, `alamat`, `no_whatsapp`, `verif`, `role`, `jam_aktif`, `join_date`, `terakhir_login`) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    (`id_user`, `kode_user`, `nis`, `fullname`, `username`, `password`, `kelas`, `alamat`, `no_whatsapp`, `verif`, `role`, `jam_aktif`, `join_date`, `terakhir_login`) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 return $stmt->execute([
+                    $nextIdUser,
                     $data['kode_user'] ?? '',
                     $data['nis'] ?? '-',
                     $data['fullname'] ?? '',
@@ -373,9 +390,10 @@ class PerpusModel {
                 ]);
             } else {
                 $stmt = $this->db->prepare("INSERT INTO `user` 
-                    (`kode_user`, `nis`, `fullname`, `username`, `password`, `kelas`, `alamat`, `no_whatsapp`, `verif`, `role`, `join_date`, `terakhir_login`) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                    (`id_user`, `kode_user`, `nis`, `fullname`, `username`, `password`, `kelas`, `alamat`, `no_whatsapp`, `verif`, `role`, `join_date`, `terakhir_login`) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 return $stmt->execute([
+                    $nextIdUser,
                     $data['kode_user'] ?? '',
                     $data['nis'] ?? '-',
                     $data['fullname'] ?? '',
@@ -741,8 +759,10 @@ class PerpusModel {
 
     public function createPenerbit(array $data): bool {
         try {
-            $stmt = $this->db->prepare("INSERT INTO `penerbit` (`kode_penerbit`, `nama_penerbit`, `verif_penerbit`) VALUES (?, ?, ?)");
+            $nextId = $this->getNextId('penerbit', 'id_penerbit');
+            $stmt = $this->db->prepare("INSERT INTO `penerbit` (`id_penerbit`, `kode_penerbit`, `nama_penerbit`, `verif_penerbit`) VALUES (?, ?, ?, ?)");
             return $stmt->execute([
+                $nextId,
                 $data['kode_penerbit'] ?? $this->getNextKodePenerbit(),
                 $data['nama_penerbit'] ?? '',
                 $data['verif_penerbit'] ?? 'Penerbit Terverifikasi'
@@ -917,8 +937,10 @@ class PerpusModel {
     public function createPengarang(array $data): bool {
         if (!$this->db) return false;
         try {
-            $stmt = $this->db->prepare("INSERT INTO `pengarang` (`kode_pengarang`, `nama_pengarang`, `status`, `biografi`) VALUES (?, ?, ?, ?)");
+            $nextId = $this->getNextId('pengarang', 'id_pengarang');
+            $stmt = $this->db->prepare("INSERT INTO `pengarang` (`id_pengarang`, `kode_pengarang`, `nama_pengarang`, `status`, `biografi`) VALUES (?, ?, ?, ?, ?)");
             return $stmt->execute([
+                $nextId,
                 $data['kode_pengarang'] ?? $this->getNextKodePengarang(),
                 $data['nama_pengarang'] ?? '',
                 $data['status'] ?? 'Aktif',
@@ -1111,8 +1133,10 @@ class PerpusModel {
 
     public function createKategori(array $data): bool {
         try {
-            $stmt = $this->db->prepare("INSERT INTO `kategori` (`kode_kategori`, `nama_kategori`) VALUES (?, ?)");
+            $nextId = $this->getNextId('kategori', 'id_kategori');
+            $stmt = $this->db->prepare("INSERT INTO `kategori` (`id_kategori`, `kode_kategori`, `nama_kategori`) VALUES (?, ?, ?)");
             return $stmt->execute([
+                $nextId,
                 $data['kode_kategori'] ?? $this->getNextKodeKategori(),
                 $data['nama_kategori'] ?? ''
             ]);
@@ -1320,9 +1344,10 @@ class PerpusModel {
                     $namaPenerbit = $foundP['nama_penerbit'];
                 } else {
                     $kodeP = $this->getNextKodePenerbit();
-                    $stmtInsP = $this->db->prepare("INSERT INTO `penerbit` (`kode_penerbit`, `nama_penerbit`, `verif_penerbit`) VALUES (?, ?, 'Penerbit Terverifikasi')");
-                    $stmtInsP->execute([$kodeP, $namaPenerbit]);
-                    $idPenerbit = (int)$this->db->lastInsertId();
+                    $nextIdP = $this->getNextId('penerbit', 'id_penerbit');
+                    $stmtInsP = $this->db->prepare("INSERT INTO `penerbit` (`id_penerbit`, `kode_penerbit`, `nama_penerbit`, `verif_penerbit`) VALUES (?, ?, ?, 'Penerbit Terverifikasi')");
+                    $stmtInsP->execute([$nextIdP, $kodeP, $namaPenerbit]);
+                    $idPenerbit = $nextIdP;
                 }
             }
             if ($idPenerbit <= 0) {
@@ -1347,9 +1372,10 @@ class PerpusModel {
                     $namaPengarang = $foundA['nama_pengarang'];
                 } else {
                     $kodeA = $this->getNextKodePengarang();
-                    $stmtInsA = $this->db->prepare("INSERT INTO `pengarang` (`kode_pengarang`, `nama_pengarang`, `status`, `biografi`) VALUES (?, ?, 'Aktif', ?)");
-                    $stmtInsA->execute([$kodeA, $namaPengarang, 'Penulis buku ' . ($data['judul_buku'] ?? '')]);
-                    $idPengarang = (int)$this->db->lastInsertId();
+                    $nextIdA = $this->getNextId('pengarang', 'id_pengarang');
+                    $stmtInsA = $this->db->prepare("INSERT INTO `pengarang` (`id_pengarang`, `kode_pengarang`, `nama_pengarang`, `status`, `biografi`) VALUES (?, ?, ?, 'Aktif', ?)");
+                    $stmtInsA->execute([$nextIdA, $kodeA, $namaPengarang, 'Penulis buku ' . ($data['judul_buku'] ?? '')]);
+                    $idPengarang = $nextIdA;
                 }
             }
             if ($idPengarang <= 0) {
@@ -1361,10 +1387,14 @@ class PerpusModel {
             $kategoriRow = $this->getKategoriById($idKategori);
             $namaKategori = $kategoriRow['nama_kategori'] ?? ($data['kategori_buku'] ?? '');
 
+            // Hitung next ID buku secara aman (kompatibel dengan TiDB tanpa auto_increment maupun MySQL auto_increment)
+            $nextIdBuku = $this->getNextId('buku', 'id_buku');
+
             $stmt = $this->db->prepare("INSERT INTO `buku` 
-                (`id_kategori`, `id_penerbit`, `id_pengarang`, `judul_buku`, `kategori_buku`, `penerbit_buku`, `pengarang`, `tahun_terbit`, `isbn`, `j_buku_baik`, `j_buku_rusak`, `j_buku_hilang`, `sinopsis`, `cover`, `harga`) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                (`id_buku`, `id_kategori`, `id_penerbit`, `id_pengarang`, `judul_buku`, `kategori_buku`, `penerbit_buku`, `pengarang`, `tahun_terbit`, `isbn`, `j_buku_baik`, `j_buku_rusak`, `j_buku_hilang`, `sinopsis`, `cover`, `harga`) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             return $stmt->execute([
+                $nextIdBuku,
                 $idKategori,
                 $idPenerbit,
                 $idPengarang,
@@ -1421,9 +1451,10 @@ class PerpusModel {
                     $namaPengarang = $foundA['nama_pengarang'];
                 } else {
                     $kodeA = $this->getNextKodePengarang();
-                    $stmtInsA = $this->db->prepare("INSERT INTO `pengarang` (`kode_pengarang`, `nama_pengarang`, `status`, `biografi`) VALUES (?, ?, 'Aktif', ?)");
-                    $stmtInsA->execute([$kodeA, $namaPengarang, 'Penulis buku literasi perpustakaan.']);
-                    $idPengarang = (int)$this->db->lastInsertId();
+                    $nextIdA = $this->getNextId('pengarang', 'id_pengarang');
+                    $stmtInsA = $this->db->prepare("INSERT INTO `pengarang` (`id_pengarang`, `kode_pengarang`, `nama_pengarang`, `status`, `biografi`) VALUES (?, ?, ?, 'Aktif', ?)");
+                    $stmtInsA->execute([$nextIdA, $kodeA, $namaPengarang, 'Penulis buku literasi perpustakaan.']);
+                    $idPengarang = $nextIdA;
                 }
             }
             if ($idPengarang <= 0) {
@@ -1638,10 +1669,13 @@ class PerpusModel {
 
             $status = $data['status_transaksi'] ?? 'Menunggu Konfirmasi';
 
+            $nextIdPem = $this->getNextId('peminjaman', 'id_peminjaman');
+
             $stmt = $this->db->prepare("INSERT INTO `peminjaman` 
-                (`id_user`, `id_buku`, `nama_anggota`, `judul_buku`, `tanggal_peminjaman`, `tanggal_pengembalian`, `status_transaksi`, `kondisi_buku_saat_dipinjam`, `kondisi_buku_saat_dikembalikan`, `denda`) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                (`id_peminjaman`, `id_user`, `id_buku`, `nama_anggota`, `judul_buku`, `tanggal_peminjaman`, `tanggal_pengembalian`, `status_transaksi`, `kondisi_buku_saat_dipinjam`, `kondisi_buku_saat_dikembalikan`, `denda`) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
             return $stmt->execute([
+                $nextIdPem,
                 $idUser,
                 $idBuku,
                 $namaAnggota,
@@ -2468,10 +2502,13 @@ class PerpusModel {
                 ];
             }
 
+            $nextIdPem = $this->getNextId('peminjaman', 'id_peminjaman');
+
             $stmt = $this->db->prepare("INSERT INTO `peminjaman` 
-                (`id_user`, `id_buku`, `nama_anggota`, `judul_buku`, `tanggal_peminjaman`, `tanggal_pengembalian`, `status_transaksi`, `kondisi_buku_saat_dipinjam`, `kondisi_buku_saat_dikembalikan`, `denda`) 
-                VALUES (?, ?, ?, ?, ?, '', 'Sedang Dipinjam', ?, '', 'Tidak ada')");
+                (`id_peminjaman`, `id_user`, `id_buku`, `nama_anggota`, `judul_buku`, `tanggal_peminjaman`, `tanggal_pengembalian`, `status_transaksi`, `kondisi_buku_saat_dipinjam`, `kondisi_buku_saat_dikembalikan`, `denda`) 
+                VALUES (?, ?, ?, ?, ?, ?, '', 'Sedang Dipinjam', ?, '', 'Tidak ada')");
             $success = $stmt->execute([
+                $nextIdPem,
                 $userId,
                 $bukuId,
                 $user['username'],
@@ -2481,10 +2518,9 @@ class PerpusModel {
             ]);
 
             if ($success) {
-                $newId = (int)$this->db->lastInsertId();
                 return [
                     'success' => true,
-                    'id_peminjaman' => $newId,
+                    'id_peminjaman' => $nextIdPem,
                     'message' => 'Peminjaman buku berhasil dicatat.'
                 ];
             } else {
@@ -2567,10 +2603,13 @@ class PerpusModel {
 
             $dendaStr = $denda > 0 ? "Rp " . number_format($denda, 0, ',', '.') . " (Sanksi: Pinjam Tanpa Izin - {$keterangan})" : "Tidak ada (Dikembalikan)";
 
+            $nextIdPem = $this->getNextId('peminjaman', 'id_peminjaman');
+
             $stmt = $this->db->prepare("INSERT INTO `peminjaman` 
-                (`id_user`, `id_buku`, `nama_anggota`, `judul_buku`, `tanggal_peminjaman`, `tanggal_pengembalian`, `status_transaksi`, `kondisi_buku_saat_dipinjam`, `kondisi_buku_saat_dikembalikan`, `denda`) 
-                VALUES (?, ?, ?, ?, ?, ?, 'Selesai', 'Baik', 'Baik', ?)");
+                (`id_peminjaman`, `id_user`, `id_buku`, `nama_anggota`, `judul_buku`, `tanggal_peminjaman`, `tanggal_pengembalian`, `status_transaksi`, `kondisi_buku_saat_dipinjam`, `kondisi_buku_saat_dikembalikan`, `denda`) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'Selesai', 'Baik', 'Baik', ?)");
             return $stmt->execute([
+                $nextIdPem,
                 $uId,
                 $bukuId,
                 $nama,
