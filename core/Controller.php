@@ -7,9 +7,18 @@ class Controller {
 
     public function __construct() {
         if (session_status() === PHP_SESSION_NONE) {
-            session_start();
+            $isHttps = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https'));
+            @session_set_cookie_params([
+                'lifetime' => 2592000,
+                'path'     => '/',
+                'secure'   => $isHttps,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+            @session_start();
         }
         $this->db = Database::getConnection();
+        self::tryRestoreAuthFromCookie();
     }
 
     public function view(string $viewPath, array $data = []): void {
@@ -78,7 +87,92 @@ class Controller {
         return null;
     }
 
+    public static function setAuthCookie(array $user): void {
+        $idUser = (int)($user['id_user'] ?? 0);
+        if ($idUser <= 0) return;
+        $timestamp = time();
+        $secret = 'perpus_smpn1kotagajah_secret_key_2026';
+        $password = $user['password'] ?? '';
+        $hmac = hash_hmac('sha256', "{$idUser}:{$timestamp}:{$password}", $secret);
+        $cookieValue = "{$idUser}|{$timestamp}|{$hmac}";
+        
+        $expire = time() + (30 * 86400); // 30 hari
+        $isHttps = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https'));
+        
+        @setcookie('perpus_auth', $cookieValue, [
+            'expires'  => $expire,
+            'path'     => '/',
+            'domain'   => '',
+            'secure'   => $isHttps,
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
+        $_COOKIE['perpus_auth'] = $cookieValue;
+    }
+
+    public static function clearAuthCookie(): void {
+        if (isset($_COOKIE['perpus_auth'])) {
+            unset($_COOKIE['perpus_auth']);
+        }
+        $isHttps = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https'));
+        @setcookie('perpus_auth', '', [
+            'expires'  => time() - 3600,
+            'path'     => '/',
+            'domain'   => '',
+            'secure'   => $isHttps,
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
+    }
+
+    public static function tryRestoreAuthFromCookie(): bool {
+        if (isset($_SESSION['user']) && !empty($_SESSION['user']['id_user'])) {
+            return true;
+        }
+
+        if (empty($_COOKIE['perpus_auth'])) {
+            return false;
+        }
+
+        $parts = explode('|', (string)$_COOKIE['perpus_auth']);
+        if (count($parts) !== 3) {
+            return false;
+        }
+
+        [$idUser, $timestamp, $hmac] = $parts;
+        $idUser = (int)$idUser;
+        $timestamp = (int)$timestamp;
+
+        // Validasi expired (30 hari)
+        if ($idUser <= 0 || (time() - $timestamp) > (30 * 86400)) {
+            return false;
+        }
+
+        try {
+            $db = Database::getConnection();
+            if (!$db) return false;
+
+            $stmt = $db->prepare("SELECT * FROM `user` WHERE `id_user` = ? LIMIT 1");
+            $stmt->execute([$idUser]);
+            $user = $stmt->fetch();
+            if (!$user) return false;
+
+            $secret = 'perpus_smpn1kotagajah_secret_key_2026';
+            $expectedHmac = hash_hmac('sha256', "{$idUser}:{$timestamp}:{$user['password']}", $secret);
+
+            if (hash_equals($expectedHmac, $hmac)) {
+                $_SESSION['user'] = $user;
+                return true;
+            }
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        return false;
+    }
+
     public function requireAuth(?string $allowedRole = null): void {
+        self::tryRestoreAuthFromCookie();
         if (!isset($_SESSION['user'])) {
             $this->setFlash('danger', 'Silakan login terlebih dahulu.');
             $this->redirect('login');

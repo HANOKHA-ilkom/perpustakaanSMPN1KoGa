@@ -12,6 +12,15 @@ if (session_status() === PHP_SESSION_NONE) {
     if (function_exists('session_save_path') && (!is_dir(session_save_path()) || !is_writable(session_save_path()))) {
         @session_save_path('/tmp');
     }
+    @ini_set('session.gc_maxlifetime', 2592000);
+    $isHttps = ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https'));
+    @session_set_cookie_params([
+        'lifetime' => 2592000,
+        'path'     => '/',
+        'secure'   => $isHttps,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
     @session_start();
 }
 
@@ -21,6 +30,9 @@ require_once __DIR__ . '/core/Controller.php';
 require_once __DIR__ . '/core/Router.php';
 require_once __DIR__ . '/models/PerpusModel.php';
 require_once __DIR__ . '/controllers/KatalogController.php';
+
+// Pulihkan sesi otomatis jika session serverless ter-reset antar kontainer/cold start
+Controller::tryRestoreAuthFromCookie();
 
 // Instantiate Router
 $router = new Router();

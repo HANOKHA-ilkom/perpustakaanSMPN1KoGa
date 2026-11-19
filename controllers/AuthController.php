@@ -38,6 +38,7 @@ class AuthController extends Controller {
             // Plain text or md5 check to support exact thesis password
             if ($user && ($user['password'] === $password || md5($password) === $user['password'])) {
                 $_SESSION['user'] = $user;
+                Controller::setAuthCookie($user);
                 $this->model->updateLastLogin((int)$user['id_user']);
 
                 $this->setFlash('success', 'Selamat datang, ' . htmlspecialchars($user['fullname']) . '!');
@@ -62,6 +63,7 @@ class AuthController extends Controller {
     }
 
     public function logout(): void {
+        Controller::clearAuthCookie();
         unset($_SESSION['user']);
         session_destroy();
         header("Location: " . $this->baseUrl('login'));
