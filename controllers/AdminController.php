@@ -172,6 +172,13 @@ class AdminController extends Controller {
         $this->redirect('admin/penerbit');
     }
 
+    public function penerbitSync(): void {
+        $this->requireAuth('Administrator');
+        $this->model->syncPenerbitDanPengarangDariBuku();
+        $this->setFlash('success', 'Data penerbit berhasil disinkronkan sesuai seluruh buku yang ada di katalog.');
+        $this->redirect('admin/penerbit');
+    }
+
     // ==========================================
     // DATA PENGARANG (MASTER DATA)
     // ==========================================
@@ -236,6 +243,13 @@ class AdminController extends Controller {
             $err = $this->model->getLastError() ?: 'Gagal menghapus data pengarang.';
             $this->setFlash('danger', $err);
         }
+        $this->redirect('admin/pengarang');
+    }
+
+    public function pengarangSync(): void {
+        $this->requireAuth('Administrator');
+        $this->model->syncPenerbitDanPengarangDariBuku();
+        $this->setFlash('success', 'Data pengarang berhasil disinkronkan sesuai seluruh buku yang ada di katalog.');
         $this->redirect('admin/pengarang');
     }
 

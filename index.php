@@ -136,11 +136,13 @@ $router->add('admin/penerbit',             ['AdminController', 'penerbit']);
 $router->add('admin/penerbit/add',         ['AdminController', 'penerbitAdd']);
 $router->add('admin/penerbit/edit',        ['AdminController', 'penerbitEdit']);
 $router->add('admin/penerbit/delete',      ['AdminController', 'penerbitDelete']);
+$router->add('admin/penerbit/sync',        ['AdminController', 'penerbitSync']);
 
 $router->add('admin/pengarang',            ['AdminController', 'pengarang']);
 $router->add('admin/pengarang/add',        ['AdminController', 'pengarangAdd']);
 $router->add('admin/pengarang/edit',       ['AdminController', 'pengarangEdit']);
 $router->add('admin/pengarang/delete',     ['AdminController', 'pengarangDelete']);
+$router->add('admin/pengarang/sync',       ['AdminController', 'pengarangSync']);
 
 $router->add('admin/administrator',        ['AdminController', 'administrator']);
 $router->add('admin/administrator/add',    ['AdminController', 'administratorAdd']);

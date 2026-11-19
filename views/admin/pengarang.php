@@ -169,6 +169,9 @@ if (!empty($topLaris)) {
                 <span class="input-group-text"><i class="fas fa-search"></i></span>
               </div>
             </div>
+            <a href="<?= $base ?>admin/pengarang/sync" class="btn btn-outline-success btn-sm font-weight-bold shadow-sm mr-2" title="Sinkronkan data pengarang dari seluruh buku yang ada di katalog">
+              <i class="fas fa-sync-alt mr-1"></i> Sinkron dari Buku
+            </a>
             <button type="button" class="btn btn-primary btn-sm font-weight-bold shadow-sm" data-toggle="modal" data-target="#modalTambahPengarang">
               <i class="fas fa-plus mr-1"></i> Tambah Pengarang
             </button>

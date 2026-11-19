@@ -127,6 +127,9 @@ foreach ($penerbitList as $p) {
                 <span class="input-group-text"><i class="fas fa-search"></i></span>
               </div>
             </div>
+            <a href="<?= $base ?>admin/penerbit/sync" class="btn btn-outline-success btn-sm font-weight-bold shadow-sm mr-2" title="Sinkronkan data penerbit dari seluruh buku yang ada di katalog">
+              <i class="fas fa-sync-alt mr-1"></i> Sinkron dari Buku
+            </a>
             <button type="button" class="btn btn-primary btn-sm font-weight-bold shadow-sm" data-toggle="modal" data-target="#modalTambahPenerbit">
               <i class="fas fa-plus mr-1"></i> Tambah Penerbit
             </button>

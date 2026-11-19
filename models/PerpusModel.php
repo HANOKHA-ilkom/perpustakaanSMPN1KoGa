@@ -306,9 +306,8 @@ class PerpusModel {
                     $this->db->exec("ALTER TABLE `user` ADD COLUMN `jam_aktif` VARCHAR(100) NOT NULL DEFAULT '07:30 - 15:30 WIB' AFTER `role`");
                 }
 
-                // Otomatis bersihkan pengarang & penerbit dengan 0 judul buku di perpustakaan
-                $this->cleanOrphanPengarang();
-                $this->cleanOrphanPenerbit();
+                // Otomatis sinkronkan penerbit & pengarang sesuai buku yang ada saat ini
+                $this->syncPenerbitDanPengarangDariBuku();
             }
         } catch (Exception $e) {
             // Silently ignore if table doesn't exist yet
@@ -326,6 +325,139 @@ class PerpusModel {
             return (int)$val ?: 1;
         } catch (\Throwable $e) {
             return 1;
+        }
+    }
+
+    /**
+     * Sinkronisasi Penerbit dan Pengarang Otomatis Berdasarkan Seluruh Buku yang Ada
+     */
+    public function syncPenerbitDanPengarangDariBuku(): void {
+        if (!$this->db) return;
+        try {
+            // 1. Kamus Biografi Pengarang Terkenal
+            $biografiDict = [
+                'Andrea Hirata'          => 'Novelis ternama Indonesia asal Belitung Timur, penulis tetralogi Laskar Pelangi yang mendunia dan meraih penghargaan sastra internasional.',
+                'A. Fuadi'               => 'Novelis dan jurnalis Indonesia, penulis trilogi inspiratif Negeri 5 Menara.',
+                'Tere Liye'              => 'Penulis produktif fiksi Indonesia, pencipta serial dunia paralel Bumi, Bulan, Matahari, dan novel Hujan.',
+                'Pramoedya Ananta Toer'  => 'Sastrawan besar legendaris Indonesia, pengarang Tetralogi Buru (Bumi Manusia dkk.) yang diakui secara global.',
+                'Eka Kurniawan'          => 'Penulis novel Cantik Itu Luka dan Lelaki Harimau, sastrawan Indonesia penerima berbagai penghargaan sastra internasional.',
+                'Almira Bastari'         => 'Penulis novel populer Home Sweet Loan dan Resign! yang mengulas dinamika dan perjuangan hidup generasi muda.',
+                'Ika Natassa'            => 'Penulis fiksi urban dan romansa metropolitan terkemuka, pengarang Heartbreak Motel, Antologi Rasa, dan Critical Eleven.',
+                'A. Makmur Makka'        => 'Penulis dan biografer terpercaya Presiden RI ke-3 Prof. Dr. Ing. B.J. Habibie serta saksi sejarah teknologi dirgantara.',
+                'Sukino'                 => 'Pakar dan pendidik matematika berpengalaman, penyusun buku teks dan modul panduan sukses ujian matematika SMP.',
+                'Kak Dicky'              => 'Kreator komik edukasi dan fabel nusantara bergambar yang sarat dengan pesan moral dan nilai budi pekerti.',
+                'Tim Redaksi Erlangga'   => 'Tim kurasi editor dan akademisi penerbitan buku teks serta ensiklopedia ilmiah populer Indonesia.',
+                'Dee Lestari'            => 'Sastrawan dan musisi Indonesia, penulis serial Supernova, Perahu Kertas, dan Aroma Karsa.',
+                'Habiburrahman El Shirazy'=> 'Sastrawan religius Indonesia lulusan Al-Azhar Kairo, penulis Ayat-Ayat Cinta dan Ketika Cinta Bertasbih.',
+                'Leila S. Chudori'       => 'Wartawan dan sastrawan pengarang novel best-seller Laut Bercerita dan Pulang.',
+                'Ahmad Tohari'           => 'Sastrawan pengarang novel Ronggeng Dukuh Paruk dan trilogi Dukuh Paruk.'
+            ];
+
+            // 2. Pastikan Penerbit Standar Selalu Ada
+            $defaultPenerbit = [
+                'Gramedia Pustaka Utama',
+                'Mizan Pustaka',
+                'Bentang Pustaka',
+                'Erlangga',
+                'Republika'
+            ];
+
+            foreach ($defaultPenerbit as $namaP) {
+                $chkP = $this->db->prepare("SELECT id_penerbit FROM `penerbit` WHERE LOWER(TRIM(nama_penerbit)) = LOWER(TRIM(?)) LIMIT 1");
+                $chkP->execute([$namaP]);
+                if (!$chkP->fetch()) {
+                    $nextIdP = $this->getNextId('penerbit', 'id_penerbit');
+                    $kodeP = $this->getNextKodePenerbit();
+                    $stmtInsP = $this->db->prepare("INSERT INTO `penerbit` (`id_penerbit`, `kode_penerbit`, `nama_penerbit`, `verif_penerbit`) VALUES (?, ?, ?, 'Penerbit Terverifikasi')");
+                    $stmtInsP->execute([$nextIdP, $kodeP, $namaP]);
+                }
+            }
+
+            // 3. Pastikan Pengarang Standar Selalu Ada
+            foreach ($biografiDict as $namaA => $bioA) {
+                $chkA = $this->db->prepare("SELECT id_pengarang FROM `pengarang` WHERE LOWER(TRIM(nama_pengarang)) = LOWER(TRIM(?)) LIMIT 1");
+                $chkA->execute([$namaA]);
+                if (!$chkA->fetch()) {
+                    $nextIdA = $this->getNextId('pengarang', 'id_pengarang');
+                    $kodeA = $this->getNextKodePengarang();
+                    $stmtInsA = $this->db->prepare("INSERT INTO `pengarang` (`id_pengarang`, `kode_pengarang`, `nama_pengarang`, `status`, `biografi`) VALUES (?, ?, ?, 'Aktif', ?)");
+                    $stmtInsA->execute([$nextIdA, $kodeA, $namaA, $bioA]);
+                }
+            }
+
+            // 4. Sinkronisasikan Seluruh Buku yang Ada Saat Ini ke Penerbit & Pengarang
+            $bukuList = $this->db->query("SELECT id_buku, id_penerbit, id_pengarang, penerbit_buku, pengarang, judul_buku FROM `buku`")->fetchAll();
+
+            foreach ($bukuList as $b) {
+                $idBuku = (int)$b['id_buku'];
+                $namaP = trim((string)$b['penerbit_buku']);
+                $namaA = trim((string)$b['pengarang']);
+
+                // Jika nama penerbit kosong tapi id_penerbit ada, isi nama penerbit di buku
+                if (empty($namaP) && (int)$b['id_penerbit'] > 0) {
+                    $pRow = $this->getPenerbitById((int)$b['id_penerbit']);
+                    if ($pRow) {
+                        $namaP = $pRow['nama_penerbit'];
+                        $this->db->prepare("UPDATE `buku` SET `penerbit_buku` = ? WHERE `id_buku` = ?")->execute([$namaP, $idBuku]);
+                    }
+                }
+
+                // Jika nama pengarang kosong tapi id_pengarang ada, isi nama pengarang di buku
+                if (empty($namaA) && (int)$b['id_pengarang'] > 0) {
+                    $aRow = $this->getPengarangById((int)$b['id_pengarang']);
+                    if ($aRow) {
+                        $namaA = $aRow['nama_pengarang'];
+                        $this->db->prepare("UPDATE `buku` SET `pengarang` = ? WHERE `id_buku` = ?")->execute([$namaA, $idBuku]);
+                    }
+                }
+
+                // Sinkronisasi Penerbit
+                if (!empty($namaP)) {
+                    $stmtP = $this->db->prepare("SELECT id_penerbit, nama_penerbit FROM `penerbit` WHERE LOWER(TRIM(nama_penerbit)) = LOWER(TRIM(?)) LIMIT 1");
+                    $stmtP->execute([$namaP]);
+                    $rowP = $stmtP->fetch();
+
+                    $targetIdP = null;
+                    if ($rowP) {
+                        $targetIdP = (int)$rowP['id_penerbit'];
+                    } else {
+                        $nextIdP = $this->getNextId('penerbit', 'id_penerbit');
+                        $kodeP = $this->getNextKodePenerbit();
+                        $stmtInsP = $this->db->prepare("INSERT INTO `penerbit` (`id_penerbit`, `kode_penerbit`, `nama_penerbit`, `verif_penerbit`) VALUES (?, ?, ?, 'Penerbit Terverifikasi')");
+                        $stmtInsP->execute([$nextIdP, $kodeP, $namaP]);
+                        $targetIdP = $nextIdP;
+                    }
+
+                    if ($targetIdP && (int)$b['id_penerbit'] !== $targetIdP) {
+                        $this->db->exec("UPDATE `buku` SET `id_penerbit` = {$targetIdP} WHERE `id_buku` = {$idBuku}");
+                    }
+                }
+
+                // Sinkronisasi Pengarang
+                if (!empty($namaA)) {
+                    $stmtA = $this->db->prepare("SELECT id_pengarang, nama_pengarang FROM `pengarang` WHERE LOWER(TRIM(nama_pengarang)) = LOWER(TRIM(?)) LIMIT 1");
+                    $stmtA->execute([$namaA]);
+                    $rowA = $stmtA->fetch();
+
+                    $targetIdA = null;
+                    if ($rowA) {
+                        $targetIdA = (int)$rowA['id_pengarang'];
+                    } else {
+                        $nextIdA = $this->getNextId('pengarang', 'id_pengarang');
+                        $kodeA = $this->getNextKodePengarang();
+                        $bio = $biografiDict[$namaA] ?? ('Penulis buku ' . ($b['judul_buku'] ?? '') . ' di perpustakaan SMPN 1 Kota Gajah.');
+                        $stmtInsA = $this->db->prepare("INSERT INTO `pengarang` (`id_pengarang`, `kode_pengarang`, `nama_pengarang`, `status`, `biografi`) VALUES (?, ?, ?, 'Aktif', ?)");
+                        $stmtInsA->execute([$nextIdA, $kodeA, $namaA, $bio]);
+                        $targetIdA = $nextIdA;
+                    }
+
+                    if ($targetIdA && (int)$b['id_pengarang'] !== $targetIdA) {
+                        $this->db->exec("UPDATE `buku` SET `id_pengarang` = {$targetIdA} WHERE `id_buku` = {$idBuku}");
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            $this->lastError = $e->getMessage();
         }
     }
 
@@ -703,8 +835,8 @@ class PerpusModel {
 
     public function getAllPenerbitWithStats(): array {
         if (!$this->db) return [];
-        // Otomatis hapus penerbit yang tidak memiliki judul buku di perpustakaan (0 judul)
-        $this->cleanOrphanPenerbit();
+        // Pastikan seluruh data penerbit sinkron sesuai buku yang ada saat ini
+        $this->syncPenerbitDanPengarangDariBuku();
 
         $sql = "SELECT p.*,
                 COUNT(DISTINCT b.id_buku) AS total_judul,
@@ -716,11 +848,11 @@ class PerpusModel {
                     SELECT COUNT(pm.id_peminjaman)
                     FROM `peminjaman` pm
                     JOIN `buku` bk ON pm.id_buku = bk.id_buku
-                    WHERE (bk.id_penerbit = p.id_penerbit OR bk.penerbit_buku = p.nama_penerbit)
+                    WHERE (bk.id_penerbit = p.id_penerbit OR LOWER(TRIM(bk.penerbit_buku)) = LOWER(TRIM(p.nama_penerbit)))
                       AND (pm.status_transaksi = 'Sedang Dipinjam' OR pm.tanggal_pengembalian IS NULL OR pm.tanggal_pengembalian = '0000-00-00' OR pm.tanggal_pengembalian = '')
                 ) AS total_terpinjam
                 FROM `penerbit` p
-                LEFT JOIN `buku` b ON (b.id_penerbit = p.id_penerbit OR b.penerbit_buku = p.nama_penerbit)
+                LEFT JOIN `buku` b ON (b.id_penerbit = p.id_penerbit OR LOWER(TRIM(b.penerbit_buku)) = LOWER(TRIM(p.nama_penerbit)))
                 GROUP BY p.id_penerbit
                 ORDER BY p.id_penerbit ASC";
         $stmt = $this->db->query($sql);
@@ -818,31 +950,15 @@ class PerpusModel {
     }
 
     /**
-     * Otomatis Hapus Penerbit dengan 0 Judul Buku di Perpustakaan
+     * Bersihkan Rekord Penerbit yang Tidak Valid (Nama Kosong)
      */
     public function cleanOrphanPenerbit(): int {
         if (!$this->db) return 0;
         try {
-            $stmt = $this->db->query("SELECT id_penerbit, nama_penerbit FROM `penerbit`");
-            $all = $stmt->fetchAll();
-            $deleted = 0;
-            foreach ($all as $p) {
-                $id = (int)$p['id_penerbit'];
-                $name = trim($p['nama_penerbit']);
-                $chk = $this->db->prepare("SELECT COUNT(*) FROM `buku` WHERE id_penerbit = ? OR LOWER(TRIM(penerbit_buku)) = LOWER(TRIM(?))");
-                $chk->execute([$id, $name]);
-                if ((int)$chk->fetchColumn() === 0) {
-                    try {
-                        $del = $this->db->prepare("DELETE FROM `penerbit` WHERE id_penerbit = ?");
-                        $del->execute([$id]);
-                        $deleted++;
-                    } catch (Exception $ex) {
-                        // Jika terikat referensi FK, abaikan
-                    }
-                }
-            }
-            return $deleted;
-        } catch (PDOException $e) {
+            $stmt = $this->db->prepare("DELETE FROM `penerbit` WHERE `nama_penerbit` IS NULL OR TRIM(`nama_penerbit`) = ''");
+            $stmt->execute();
+            return $stmt->rowCount();
+        } catch (\Throwable $e) {
             $this->lastError = $e->getMessage();
             return 0;
         }
@@ -860,8 +976,8 @@ class PerpusModel {
     public function getAllPengarangWithStats(): array {
         if (!$this->db) return [];
         try {
-            // Otomatis hapus pengarang yang tidak memiliki judul buku di perpustakaan (0 judul)
-            $this->cleanOrphanPengarang();
+            // Pastikan data pengarang sinkron sesuai buku yang ada saat ini
+            $this->syncPenerbitDanPengarangDariBuku();
 
             $sql = "SELECT p.*,
                     COUNT(DISTINCT b.id_buku) AS total_judul,
@@ -873,17 +989,17 @@ class PerpusModel {
                         SELECT COUNT(pm.id_peminjaman)
                         FROM `peminjaman` pm
                         JOIN `buku` bk ON pm.id_buku = bk.id_buku
-                        WHERE (bk.pengarang LIKE CONCAT('%', p.nama_pengarang, '%') OR p.nama_pengarang LIKE CONCAT('%', bk.pengarang, '%'))
+                        WHERE (bk.id_pengarang = p.id_pengarang OR bk.pengarang LIKE CONCAT('%', p.nama_pengarang, '%') OR p.nama_pengarang LIKE CONCAT('%', bk.pengarang, '%'))
                           AND (pm.status_transaksi = 'Sedang Dipinjam' OR pm.tanggal_pengembalian IS NULL OR pm.tanggal_pengembalian = '0000-00-00' OR pm.tanggal_pengembalian = '')
                     ) AS total_terpinjam,
                     (
                         SELECT COUNT(pm2.id_peminjaman)
                         FROM `peminjaman` pm2
                         JOIN `buku` bk2 ON pm2.id_buku = bk2.id_buku
-                        WHERE (bk2.pengarang LIKE CONCAT('%', p.nama_pengarang, '%') OR p.nama_pengarang LIKE CONCAT('%', bk2.pengarang, '%'))
+                        WHERE (bk2.id_pengarang = p.id_pengarang OR bk2.pengarang LIKE CONCAT('%', p.nama_pengarang, '%') OR p.nama_pengarang LIKE CONCAT('%', bk2.pengarang, '%'))
                     ) AS total_riwayat_pinjam
                     FROM `pengarang` p
-                    LEFT JOIN `buku` b ON (b.pengarang LIKE CONCAT('%', p.nama_pengarang, '%') OR p.nama_pengarang LIKE CONCAT('%', b.pengarang, '%'))
+                    LEFT JOIN `buku` b ON (b.id_pengarang = p.id_pengarang OR b.pengarang LIKE CONCAT('%', p.nama_pengarang, '%') OR p.nama_pengarang LIKE CONCAT('%', b.pengarang, '%'))
                     GROUP BY p.id_pengarang
                     ORDER BY p.id_pengarang ASC";
             $stmt = $this->db->query($sql);
@@ -891,6 +1007,7 @@ class PerpusModel {
 
             // Sertakan daftar buku per pengarang untuk pop up detail
             foreach ($list as &$row) {
+                $pId = (int)$row['id_pengarang'];
                 $pName = $row['nama_pengarang'];
                 $bStmt = $this->db->prepare("
                     SELECT b.*,
@@ -906,10 +1023,10 @@ class PerpusModel {
                         WHERE pm_all.id_buku = b.id_buku
                     ) AS kali_dipinjam
                     FROM `buku` b
-                    WHERE b.pengarang LIKE CONCAT('%', ?, '%') OR ? LIKE CONCAT('%', b.pengarang, '%')
+                    WHERE b.id_pengarang = ? OR b.pengarang LIKE CONCAT('%', ?, '%') OR ? LIKE CONCAT('%', b.pengarang, '%')
                     ORDER BY b.judul_buku ASC
                 ");
-                $bStmt->execute([$pName, $pName]);
+                $bStmt->execute([$pId, $pName, $pName]);
                 $row['buku_list'] = $bStmt->fetchAll();
             }
             unset($row);
@@ -1007,31 +1124,15 @@ class PerpusModel {
     }
 
     /**
-     * Otomatis Hapus Pengarang dengan 0 Judul Buku di Perpustakaan
+     * Bersihkan Rekord Pengarang yang Tidak Valid (Nama Kosong)
      */
     public function cleanOrphanPengarang(): int {
         if (!$this->db) return 0;
         try {
-            $stmt = $this->db->query("SELECT id_pengarang, nama_pengarang FROM `pengarang`");
-            $all = $stmt->fetchAll();
-            $deleted = 0;
-            foreach ($all as $p) {
-                $name = trim($p['nama_pengarang']);
-                if (empty($name)) {
-                    $this->db->exec("DELETE FROM `pengarang` WHERE id_pengarang = " . (int)$p['id_pengarang']);
-                    $deleted++;
-                    continue;
-                }
-                $chk = $this->db->prepare("SELECT COUNT(*) FROM `buku` WHERE LOWER(`pengarang`) LIKE CONCAT('%', LOWER(?), '%') OR LOWER(?) LIKE CONCAT('%', LOWER(`pengarang`), '%')");
-                $chk->execute([$name, $name]);
-                if ((int)$chk->fetchColumn() === 0) {
-                    $del = $this->db->prepare("DELETE FROM `pengarang` WHERE id_pengarang = ?");
-                    $del->execute([$p['id_pengarang']]);
-                    $deleted++;
-                }
-            }
-            return $deleted;
-        } catch (PDOException $e) {
+            $stmt = $this->db->prepare("DELETE FROM `pengarang` WHERE `nama_pengarang` IS NULL OR TRIM(`nama_pengarang`) = ''");
+            $stmt->execute();
+            return $stmt->rowCount();
+        } catch (\Throwable $e) {
             $this->lastError = $e->getMessage();
             return 0;
         }
